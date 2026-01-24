@@ -72,7 +72,7 @@ router.post(
     };
 
     const token = jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expiresIn,
+      expiresIn: config.jwt.expiresIn as any,
     });
 
     res.json({
