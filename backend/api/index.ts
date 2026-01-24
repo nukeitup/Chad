@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import 'dotenv/config';
+
+// Load env vars
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+
 import { createApp } from '../src/app';
 
 const app = createApp();
