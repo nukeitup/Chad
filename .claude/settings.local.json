@@ -3,7 +3,13 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nInitial commit: AML/CFT Entity Onboarding Compliance Application\n\nAdd project build guide and Claude Code configuration for the\nCustomer Due Diligence \\(CDD\\) automation system.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(npx neonctl@latest init)"
     ]
   }
 }
