@@ -28,9 +28,6 @@
   ],
   "author": "",
   "license": "ISC",
-  "engines": {
-    "node": "22.x"
-  },
   "type": "commonjs",
   "dependencies": {
     "@prisma/adapter-pg": "^7.3.0",

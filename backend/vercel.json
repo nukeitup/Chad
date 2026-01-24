@@ -4,7 +4,7 @@
   "buildCommand": "echo 'Skipping build - using serverless functions'",
   "functions": {
     "api/index.ts": {
-      "runtime": "@vercel/node@3.0.0"
+      "runtime": "@vercel/node"
     }
   },
   "rewrites": [
