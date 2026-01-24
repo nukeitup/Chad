@@ -58,6 +58,7 @@
     "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
+    "@vercel/node": "^5.5.27",
     "eslint": "^9.39.2",
     "prettier": "^3.8.1",
     "prisma": "^7.3.0",
