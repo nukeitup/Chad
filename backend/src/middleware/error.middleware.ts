@@ -52,7 +52,7 @@ export const errorHandler = (
   if (err instanceof ZodError) {
     statusCode = 400;
     message = 'Validation error';
-    details = err.errors.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
+    details = err.issues.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ');
   }
 
   // Handle Prisma errors
