@@ -1,7 +1,12 @@
 import { PrismaClient, UserRole, RiskRating } from '../src/generated/prisma';
 import bcrypt from 'bcryptjs';
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 
-const prisma = new PrismaClient();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Starting database seed...');
@@ -10,6 +15,17 @@ async function main() {
   const passwordHash = await bcrypt.hash('Password123!', 12);
 
   const users = await Promise.all([
+    prisma.user.upsert({
+      where: { email: 'ninalambon.nz@gmail.com' },
+      update: {},
+      create: {
+        email: 'ninalambon.nz@gmail.com',
+        passwordHash,
+        firstName: 'Nina',
+        lastName: 'Lambon',
+        role: UserRole.ADMIN,
+      },
+    }),
     prisma.user.upsert({
       where: { email: 'admin@example.com' },
       update: {},
@@ -115,6 +131,7 @@ async function main() {
 
   console.log('Database seed completed successfully!');
   console.log('\nTest Users:');
+  console.log('  Nina Lambon: ninalambon.nz@gmail.com / Password123!');
   console.log('  Admin: admin@example.com / Password123!');
   console.log('  Compliance Officer: compliance@example.com / Password123!');
   console.log('  Team Manager: manager@example.com / Password123!');
