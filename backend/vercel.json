@@ -1,8 +1,4 @@
 {
   "version": 2,
-  "installCommand": "npm ci --include=dev && npx prisma generate",
-  "buildCommand": "echo 'Skipping build'",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/api" }
-  ]
+  "installCommand": "npm ci --include=dev && npx prisma generate"
 }
