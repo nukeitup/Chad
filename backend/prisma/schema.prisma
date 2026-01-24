@@ -1,0 +1,428 @@
+// AML/CFT Entity Onboarding Compliance Application
+// Database Schema - Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum EntityType {
+  NZ_COMPANY
+  NZ_LIMITED_PARTNERSHIP
+  NZ_LOCAL_AUTHORITY
+  NZ_STATE_ENTERPRISE
+  NZ_PUBLIC_SERVICE_AGENCY
+  NZ_GOVT_DEPARTMENT
+  NZ_LISTED_ISSUER
+  OVERSEAS_COMPANY
+  TRUST
+  FOUNDATION
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+  STRUCK_OFF
+  LIQUIDATION
+}
+
+enum ApplicationType {
+  NEW_CUSTOMER
+  EXISTING_UPLIFT
+}
+
+enum CDDLevel {
+  SIMPLIFIED
+  STANDARD
+  ENHANCED
+}
+
+enum WorkflowState {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  RETURNED
+  APPROVED
+  REJECTED
+}
+
+enum RiskRating {
+  LOW
+  MEDIUM
+  HIGH
+  PROHIBITED
+}
+
+enum OwnershipBasis {
+  ULTIMATE_OWNERSHIP
+  EFFECTIVE_CONTROL
+  PERSON_ON_WHOSE_BEHALF
+}
+
+enum VerificationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+}
+
+enum PEPStatus {
+  NOT_PEP
+  DOMESTIC_PEP
+  FOREIGN_PEP
+  INTERNATIONAL_ORG_PEP
+}
+
+enum UserRole {
+  SPECIALIST
+  TEAM_MANAGER
+  COMPLIANCE_OFFICER
+  ADMIN
+}
+
+enum DocumentCategory {
+  ENTITY_IDENTIFICATION
+  BENEFICIAL_OWNER_ID
+  POABOC_ID
+  AUTHORITY_DOCUMENT
+  SOURCE_OF_WEALTH
+  SOURCE_OF_FUNDS
+  OTHER
+}
+
+// ==================== MODELS ====================
+
+// User - Authentication & Authorization
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  role              UserRole
+  isActive          Boolean   @default(true)
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relationships
+  assignedApplications   CDDApplication[] @relation("AssignedSpecialist")
+  approverApplications   CDDApplication[] @relation("AssignedApprover")
+  approvedApplications   CDDApplication[] @relation("ApprovedBy")
+  verifiedBeneficialOwners BeneficialOwner[] @relation("VerifiedBy")
+  verifiedPOABOCs        PersonActingOnBehalf[] @relation("VerifiedBy")
+  uploadedDocuments      Document[]
+  auditLogs              AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+// Entity - Customer/Business being onboarded
+model Entity {
+  id                        String       @id @default(uuid())
+  entityType                EntityType
+  legalName                 String
+  tradingName               String?
+  nzbn                      String?      @unique
+  companyNumber             String?
+  overseasRegistrationNumber String?
+  countryOfIncorporation    String       @default("NZ")
+  incorporationDate         DateTime?
+  entityStatus              EntityStatus @default(ACTIVE)
+
+  // Registered Address
+  registeredStreet          String?
+  registeredCity            String?
+  registeredPostcode        String?
+  registeredCountry         String?
+
+  // Principal Place of Business
+  businessStreet            String?
+  businessCity              String?
+  businessPostcode          String?
+  businessCountry           String?
+
+  // Simplified CDD eligibility
+  isListedIssuer            Boolean      @default(false)
+  listedExchange            String?
+
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
+
+  // Relationships
+  applications              CDDApplication[]
+  beneficialOwners          BeneficialOwner[]
+
+  @@index([nzbn])
+  @@index([legalName])
+  @@index([entityType])
+}
+
+// CDD Application - Main workflow record
+model CDDApplication {
+  id                      String          @id @default(uuid())
+  applicationNumber       String          @unique
+  entityId                String
+  applicationType         ApplicationType
+  cddLevel                CDDLevel
+  cddLevelJustification   String?
+  workflowState           WorkflowState   @default(DRAFT)
+
+  // Risk Assessment
+  riskRating              RiskRating?
+  riskScore               Int?
+  riskRatingJustification String?
+
+  // Nature & Purpose
+  naturePurposeRelationship String?
+  anticipatedMonthlyVolume  Int?
+  anticipatedMonthlyValue   Decimal?       @db.Decimal(15, 2)
+  productsRequested        String[]
+  sourceOfFunds            String?
+  sourceOfWealth           String?
+
+  // Workflow
+  assignedSpecialistId    String?
+  assignedApproverId      String?
+  submittedDate           DateTime?
+  approvedDate            DateTime?
+  approvedById            String?
+  returnedDate            DateTime?
+  returnedReason          String?
+  rejectedDate            DateTime?
+  rejectedReason          String?
+
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  // Relationships
+  entity                  Entity          @relation(fields: [entityId], references: [id])
+  assignedSpecialist      User?           @relation("AssignedSpecialist", fields: [assignedSpecialistId], references: [id])
+  assignedApprover        User?           @relation("AssignedApprover", fields: [assignedApproverId], references: [id])
+  approvedBy              User?           @relation("ApprovedBy", fields: [approvedById], references: [id])
+  beneficialOwners        BeneficialOwner[]
+  personsActingOnBehalf   PersonActingOnBehalf[]
+  documents               Document[]
+  auditLogs               AuditLog[]
+  cddTriggers             CDDTrigger[]
+  riskFactors             RiskFactor[]
+
+  @@index([applicationNumber])
+  @@index([workflowState])
+  @@index([assignedSpecialistId])
+  @@index([assignedApproverId])
+  @@index([submittedDate])
+}
+
+// Person - Natural Person (used for beneficial owners and POABOC)
+model Person {
+  id                      String          @id @default(uuid())
+  fullName                String
+  firstName               String?
+  lastName                String?
+  dateOfBirth             DateTime?
+
+  // Residential Address
+  residentialStreet       String?
+  residentialCity         String?
+  residentialPostcode     String?
+  residentialCountry      String?
+
+  nationality             String?
+
+  // Identity Document
+  idDocumentType          String?
+  idDocumentNumber        String?
+  idDocumentExpiry        DateTime?
+  idDocumentCountry       String?
+
+  // Screening Results
+  pepStatus               PEPStatus       @default(NOT_PEP)
+  pepDetails              String?
+  sanctionsScreeningResult String?
+  sanctionsScreeningDate  DateTime?
+  adverseMediaResult      String?
+  adverseMediaDate        DateTime?
+
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  // Relationships
+  beneficialOwnerRecords  BeneficialOwner[]
+  poabocRecords           PersonActingOnBehalf[]
+
+  @@index([fullName])
+}
+
+// Beneficial Owner
+model BeneficialOwner {
+  id                      String            @id @default(uuid())
+  applicationId           String
+  entityId                String
+  personId                String
+
+  // Ownership Details
+  ownershipBasis          OwnershipBasis[]
+  ownershipPercentage     Decimal?          @db.Decimal(5, 2)
+  indirectOwnershipPath   String?
+  isNominee               Boolean           @default(false)
+  nomineeForPersonId      String?
+
+  // Verification
+  verificationStatus      VerificationStatus @default(NOT_STARTED)
+  verifiedDate            DateTime?
+  verifiedById            String?
+  verificationNotes       String?
+
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  // Relationships
+  application             CDDApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  entity                  Entity            @relation(fields: [entityId], references: [id])
+  person                  Person            @relation(fields: [personId], references: [id])
+  verifiedBy              User?             @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  documents               Document[]
+
+  @@unique([applicationId, personId])
+  @@index([applicationId])
+  @@index([verificationStatus])
+}
+
+// Person Acting on Behalf of Customer (POABOC)
+model PersonActingOnBehalf {
+  id                      String            @id @default(uuid())
+  applicationId           String
+  personId                String
+
+  roleTitle               String
+  authorityDocumentType   String?
+  authorityDocumentRef    String?
+
+  // Verification
+  verificationStatus      VerificationStatus @default(NOT_STARTED)
+  verifiedDate            DateTime?
+  verifiedById            String?
+  verificationNotes       String?
+
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  // Relationships
+  application             CDDApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  person                  Person            @relation(fields: [personId], references: [id])
+  verifiedBy              User?             @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  documents               Document[]
+
+  @@unique([applicationId, personId])
+  @@index([applicationId])
+}
+
+// Document
+model Document {
+  id                      String            @id @default(uuid())
+  applicationId           String
+  beneficialOwnerId       String?
+  poabocId                String?
+
+  documentType            String
+  documentCategory        DocumentCategory
+  fileName                String
+  filePath                String
+  fileType                String
+  fileSize                Int
+
+  uploadDate              DateTime          @default(now())
+  uploadedById            String
+
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  // Relationships
+  application             CDDApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  beneficialOwner         BeneficialOwner?  @relation(fields: [beneficialOwnerId], references: [id])
+  poaboc                  PersonActingOnBehalf? @relation(fields: [poabocId], references: [id])
+  uploadedBy              User              @relation(fields: [uploadedById], references: [id])
+
+  @@index([applicationId])
+  @@index([documentCategory])
+}
+
+// CDD Trigger - Records why Enhanced or Simplified CDD was determined
+model CDDTrigger {
+  id                      String            @id @default(uuid())
+  applicationId           String
+  triggerType             String
+  triggerDescription      String
+  legalReference          String
+
+  createdAt               DateTime          @default(now())
+
+  // Relationships
+  application             CDDApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+}
+
+// Risk Factor - Individual risk factors contributing to overall rating
+model RiskFactor {
+  id                      String            @id @default(uuid())
+  applicationId           String
+  factorCategory          String
+  factorDescription       String
+  riskPoints              Int
+
+  createdAt               DateTime          @default(now())
+
+  // Relationships
+  application             CDDApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+}
+
+// Audit Log
+model AuditLog {
+  id                      String            @id @default(uuid())
+  applicationId           String?
+  userId                  String
+  timestamp               DateTime          @default(now())
+  actionType              String
+  tableAffected           String
+  recordIdAffected        String
+  oldValue                Json?
+  newValue                Json?
+  ipAddress               String?
+  sessionId               String?
+
+  // Relationships
+  application             CDDApplication?   @relation(fields: [applicationId], references: [id])
+  user                    User              @relation(fields: [userId], references: [id])
+
+  @@index([applicationId])
+  @@index([userId])
+  @@index([timestamp])
+  @@index([actionType])
+}
+
+// Country Reference Data
+model Country {
+  id                      String            @id @default(uuid())
+  countryCode             String            @unique
+  countryName             String
+  riskLevel               RiskRating        @default(LOW)
+  isFATFMember            Boolean           @default(false)
+  isFATFHighRisk          Boolean           @default(false)
+  fatfStatus              String?
+  lastUpdated             DateTime          @default(now())
+
+  @@index([countryCode])
+  @@index([riskLevel])
+}
