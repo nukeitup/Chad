@@ -63,6 +63,11 @@ export function createApp(): Express {
     app.use(morgan('combined'));
   }
 
+  // POST body test
+  app.post('/post-test', (req, res) => {
+    res.json({ success: true, body: req.body });
+  });
+
   // Health check endpoint
   app.get('/health', (req, res) => {
     res.json({
