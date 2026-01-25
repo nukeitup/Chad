@@ -94,6 +94,24 @@ export const applicationsApi = {
 
   getStats: () =>
     api.get('/applications/stats/summary'),
+
+  // CDD Determination endpoints
+  determineCDDLevel: (id: string, riskFactors?: {
+    personalAssetVehicle?: boolean;
+    bearerShares?: boolean;
+    hasNominees?: boolean;
+  }) =>
+    api.post(`/applications/${id}/determine-cdd-level`, { riskFactors }),
+
+  calculateRisk: (id: string, data?: {
+    products?: string[];
+    anticipatedMonthlyVolume?: number;
+    anticipatedMonthlyValue?: number;
+  }) =>
+    api.post(`/applications/${id}/calculate-risk`, data),
+
+  getCDDAssessment: (id: string) =>
+    api.get(`/applications/${id}/cdd-assessment`),
 };
 
 // Entities API
@@ -231,6 +249,15 @@ export const usersApi = {
 export const nzbnApi = {
   search: (query: string) =>
     api.get('/nzbn/search', { params: { q: query } }),
+};
+
+// System API
+export const systemApi = {
+  getTestModeStatus: () =>
+    api.get('/test-mode'),
+
+  getHealth: () =>
+    axios.get(`${API_BASE_URL.replace('/api/v1', '')}/health`),
 };
 
 export default api;

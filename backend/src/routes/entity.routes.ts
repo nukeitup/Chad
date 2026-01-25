@@ -6,6 +6,7 @@ import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
 import { config } from '../config';
+import { mockDataService } from '../services/mock-data.service';
 
 const router = Router();
 
@@ -61,31 +62,14 @@ router.get(
       throw new ApiError('Search query must be at least 2 characters', 400);
     }
 
-    // In production, this would call the actual NZBN API
-    // For development, we'll simulate a response
-    if (config.nodeEnv === 'development') {
-      // Simulated NZBN API response
-      const mockResults = [
-        {
-          nzbn: '9429041561467',
-          entityName: 'ABC TRADING LIMITED',
-          entityTypeName: 'NZ Limited Company',
-          entityStatusDescription: 'Registered',
-          registrationDate: '2018-03-15',
-        },
-        {
-          nzbn: '9429041561999',
-          entityName: 'ABC TRADING COMPANY LIMITED',
-          entityTypeName: 'NZ Limited Company',
-          entityStatusDescription: 'Registered',
-          registrationDate: '2019-05-20',
-        },
-      ].filter((e) => e.entityName.toLowerCase().includes(query.toLowerCase()));
+    // In test mode, use comprehensive mock data service
+    if (config.testMode) {
+      const mockResults = mockDataService.searchEntities(query);
 
       res.json({
         success: true,
         data: { results: mockResults },
-        message: 'Development mode: Using mock NZBN data',
+        message: 'Test mode: Using mock NZBN data. Available test entities include: ABC TRADING, MERIDIAN ENERGY (NZX listed), AUCKLAND COUNCIL (Local Authority), KIWIRAIL (SOE), PACIFIC HOLDINGS (complex ownership), SMITH FAMILY TRUST, WELLINGTON VENTURES LP, CIVIC CONSULTANTS (PEP scenario)',
       });
       return;
     }
@@ -148,55 +132,54 @@ router.get(
       return;
     }
 
-    // In production, fetch from NZBN API
-    if (config.nodeEnv === 'development') {
-      // Simulated NZBN entity data
-      const mockEntity = {
-        nzbn,
-        entityName: 'ABC TRADING LIMITED',
-        tradingName: 'ABC Trading',
-        entityTypeCode: 'LTD',
-        entityTypeName: 'NZ Limited Company',
-        entityStatusCode: 'REGD',
-        entityStatusDescription: 'Registered',
-        registrationDate: '2018-03-15',
-        addresses: [
-          {
-            addressType: 'Registered Office',
-            address1: '123 Queen Street',
-            address2: 'Level 5',
-            address3: 'Auckland CBD',
-            postCode: '1010',
-            countryCode: 'NZ',
+    // In test mode, use comprehensive mock data service
+    if (config.testMode) {
+      const mockEntity = mockDataService.getEntityByNZBN(nzbn);
+
+      if (!mockEntity) {
+        // Return a generic mock for unknown NZBNs in test mode
+        res.json({
+          success: true,
+          data: {
+            entity: {
+              nzbn,
+              entityName: `TEST COMPANY ${nzbn.slice(-4)}`,
+              entityTypeCode: 'LTD',
+              entityTypeName: 'NZ Limited Company',
+              entityStatusCode: 'REGD',
+              entityStatusDescription: 'Registered',
+              registrationDate: '2020-01-01',
+              addresses: [
+                {
+                  addressType: 'Registered Office',
+                  address1: '1 Test Street',
+                  postCode: '1010',
+                  countryCode: 'NZ',
+                },
+              ],
+              directors: [
+                {
+                  directorNumber: 'D001',
+                  fullName: 'Test Director',
+                  appointmentDate: '2020-01-01',
+                },
+              ],
+              shareholders: [
+                {
+                  shareholderName: 'Test Director',
+                  shareholderType: 'Individual',
+                  numberOfShares: 100,
+                  totalShares: 100,
+                  allocationDate: '2020-01-01',
+                },
+              ],
+            },
+            source: 'nzbn_api',
           },
-        ],
-        directors: [
-          {
-            directorNumber: 'D001',
-            fullName: 'John Smith',
-            appointmentDate: '2018-03-15',
-          },
-          {
-            directorNumber: 'D002',
-            fullName: 'Mary Johnson',
-            appointmentDate: '2019-06-01',
-          },
-        ],
-        shareholders: [
-          {
-            shareholderName: 'John Smith',
-            shareholderType: 'Individual',
-            numberOfShares: 550,
-            allocationDate: '2018-03-15',
-          },
-          {
-            shareholderName: 'Mary Johnson',
-            shareholderType: 'Individual',
-            numberOfShares: 450,
-            allocationDate: '2018-03-15',
-          },
-        ],
-      };
+          message: 'Test mode: NZBN not found in mock database, returning generic test entity',
+        });
+        return;
+      }
 
       res.json({
         success: true,
@@ -204,7 +187,7 @@ router.get(
           entity: mockEntity,
           source: 'nzbn_api',
         },
-        message: 'Development mode: Using mock NZBN data',
+        message: `Test mode: Using mock NZBN data for ${mockEntity.entityName}`,
       });
       return;
     }
