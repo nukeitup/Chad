@@ -158,7 +158,42 @@ export function createApp(): Express {
     }
   });
 
-  // Login debug endpoint
+  // Login debug endpoint - POST version
+  app.post('/login-debug', async (req, res) => {
+    try {
+      const prisma = require('./utils/prisma').default;
+      const bcrypt = require('bcryptjs');
+      const jwt = require('jsonwebtoken');
+      const { config } = require('./config');
+
+      const user = await prisma.user.findUnique({
+        where: { email: 'ninalambon.nz@gmail.com' }
+      });
+
+      if (!user) {
+        return res.json({ success: false, error: 'User not found' });
+      }
+
+      const isValid = await bcrypt.compare('Password123!', user.passwordHash);
+      if (!isValid) {
+        return res.json({ success: false, error: 'Invalid password' });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() }
+      });
+
+      const payload = { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName };
+      const token = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+
+      res.json({ success: true, data: { token, user: payload } });
+    } catch (error: any) {
+      res.json({ success: false, error: error.message, stack: error.stack });
+    }
+  });
+
+  // Login debug endpoint - GET version
   app.get('/login-debug', async (req, res) => {
     try {
       const prisma = require('./utils/prisma').default;
