@@ -12,6 +12,8 @@ import LoginPage from './pages/auth/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ApplicationsPage from './pages/applications/ApplicationsPage';
 import NewApplicationPage from './pages/applications/NewApplicationPage';
+import ApplicationDetailPage from './pages/applications/ApplicationDetailPage';
+import ApprovalQueuePage from './pages/approvals/ApprovalQueuePage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,10 +46,10 @@ function App() {
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="applications" element={<ApplicationsPage />} />
-              <Route path="applications/:id" element={<div>Application Details (Coming Soon)</div>} />
               <Route path="applications/new" element={<NewApplicationPage />} />
+              <Route path="applications/:id" element={<ApplicationDetailPage />} />
               <Route path="entities" element={<div>Entities (Coming Soon)</div>} />
-              <Route path="approvals" element={<div>Approval Queue (Coming Soon)</div>} />
+              <Route path="approvals" element={<ApprovalQueuePage />} />
               <Route path="users" element={<div>Users (Coming Soon)</div>} />
               <Route path="settings" element={<div>Settings (Coming Soon)</div>} />
               <Route path="profile" element={<div>Profile (Coming Soon)</div>} />
