@@ -75,6 +75,17 @@ export function createApp(): Express {
     });
   });
 
+  // Database test endpoint
+  app.get('/db-test', async (req, res) => {
+    try {
+      const prisma = require('./utils/prisma').default;
+      const result = await prisma.$queryRaw`SELECT 1 as test`;
+      res.json({ success: true, data: result });
+    } catch (error: any) {
+      res.json({ success: false, error: error.message, stack: error.stack });
+    }
+  });
+
   // API routes
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/applications', applicationRoutes);
