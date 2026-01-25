@@ -15,7 +15,8 @@ import NewApplicationPage from './pages/applications/NewApplicationPage';
 import ApplicationDetailPage from './pages/applications/ApplicationDetailPage';
 import ApprovalQueuePage from './pages/approvals/ApprovalQueuePage';
 import OwnershipTreePage from './pages/entities/OwnershipTreePage';
-import ReportsPage from './pages/ReportsPage'; // Import the new page
+import ReportsPage from './pages/ReportsPage';
+import AboutPage from './pages/AboutPage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,6 +58,7 @@ function App() {
               <Route path="users" element={<div>Users (Coming Soon)</div>} />
               <Route path="settings" element={<div>Settings (Coming Soon)</div>} />
               <Route path="profile" element={<div>Profile (Coming Soon)</div>} />
+              <Route path="about" element={<AboutPage />} />
             </Route>
 
             {/* Catch all */}
