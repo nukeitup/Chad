@@ -68,6 +68,43 @@ export function createApp(): Express {
     res.json({ success: true, body: req.body });
   });
 
+  // Simple login (bypassing auth routes)
+  app.post('/simple-login', async (req, res) => {
+    try {
+      const prisma = require('./utils/prisma').default;
+      const bcrypt = require('bcryptjs');
+      const jwt = require('jsonwebtoken');
+
+      const { email, password } = req.body;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      }
+
+      const valid = await bcrypt.compare(password, user.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      }
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName },
+        config.jwt.secret,
+        { expiresIn: config.jwt.expiresIn }
+      );
+
+      res.json({
+        success: true,
+        data: {
+          token,
+          user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Health check endpoint
   app.get('/health', (req, res) => {
     res.json({
