@@ -2,10 +2,8 @@ import React from 'react';
 import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { RootState, AppDispatch } from '../../../store'; // Adjust path based on actual structure
-import { useEffect, useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { fetchApplicationById } from '../../../store/slices/applicationSlice'; // Assuming you have this action
+import { RootState, AppDispatch } from '../../store';
+import { fetchApplicationById } from '../../store/slices/applicationSlice';
 import { Tree, TreeNode } from 'react-recharts'; // Assuming recharts will be used, placeholder
 
 // Placeholder for the OwnershipTree component - this will be created later
