@@ -115,6 +115,8 @@ export function createApp(): Express {
     try {
       const prisma = require('./utils/prisma').default;
       const bcrypt = require('bcryptjs');
+      const jwt = require('jsonwebtoken');
+      const { config } = require('./config');
 
       // Step 1: Find user
       const user = await prisma.user.findUnique({
@@ -125,24 +127,34 @@ export function createApp(): Express {
         return res.json({ success: false, step: 'findUser', error: 'User not found' });
       }
 
-      // Step 2: Check password hash exists
-      const hashInfo = {
-        exists: !!user.passwordHash,
-        length: user.passwordHash?.length,
-        prefix: user.passwordHash?.substring(0, 10)
+      // Step 2: bcrypt compare
+      const isValid = await bcrypt.compare('Password123!', user.passwordHash);
+      if (!isValid) {
+        return res.json({ success: false, step: 'bcrypt', error: 'Invalid password' });
+      }
+
+      // Step 3: Update last login
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() }
+      });
+
+      // Step 4: Generate JWT
+      const payload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName
       };
 
-      // Step 3: Try bcrypt compare
-      const isValid = await bcrypt.compare('Password123!', user.passwordHash);
+      const token = jwt.sign(payload, config.jwt.secret, {
+        expiresIn: config.jwt.expiresIn
+      });
 
       res.json({
         success: true,
-        data: {
-          userId: user.id,
-          email: user.email,
-          hashInfo,
-          passwordValid: isValid
-        }
+        data: { token, user: payload }
       });
     } catch (error: any) {
       res.json({ success: false, error: error.message, step: 'unknown', stack: error.stack });
