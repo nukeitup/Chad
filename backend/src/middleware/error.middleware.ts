@@ -80,17 +80,15 @@ export const errorHandler = (
     message = 'Invalid data provided';
   }
 
-  // Log error in development
-  if (config.nodeEnv === 'development') {
-    console.error('Error:', {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-    });
-  }
+  // Always log errors for debugging
+  console.error('Error:', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+  });
 
-  // Send error response
-  const response: ApiResponse = {
+  // Send error response with debug info
+  const response: ApiResponse & { debug?: string } = {
     success: false,
     error: message,
   };
@@ -99,10 +97,8 @@ export const errorHandler = (
     response.message = details;
   }
 
-  // Include stack trace in development
-  if (config.nodeEnv === 'development' && err.stack) {
-    (response as ApiResponse & { stack?: string }).stack = err.stack;
-  }
+  // Include actual error message for debugging
+  response.debug = err.message;
 
   res.status(statusCode).json(response);
 };
