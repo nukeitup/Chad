@@ -97,6 +97,19 @@ export function createApp(): Express {
     }
   });
 
+  // Prisma ORM test endpoint
+  app.get('/prisma-test', async (req, res) => {
+    try {
+      const prisma = require('./utils/prisma').default;
+      const user = await prisma.user.findFirst({
+        select: { id: true, email: true, firstName: true }
+      });
+      res.json({ success: true, data: user });
+    } catch (error: any) {
+      res.json({ success: false, error: error.message, stack: error.stack });
+    }
+  });
+
   // API routes
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/applications', applicationRoutes);
