@@ -68,46 +68,32 @@ export function createApp(): Express {
     res.json({ success: true, body: req.body });
   });
 
-  // Simple login (bypassing auth routes)
+  // Simple login - now uses req.body
   app.post('/simple-login', async (req, res) => {
     try {
       const prisma = require('./utils/prisma').default;
       const bcrypt = require('bcryptjs');
       const jwt = require('jsonwebtoken');
+      const { config } = require('./config');
 
       const { email, password } = req.body;
 
-      // Debug: log what we received
-      console.log('Login attempt:', { email, password: '***' });
-
-      // Use hardcoded email to test
-      const testEmail = 'ninalambon.nz@gmail.com';
-      const user = await prisma.user.findUnique({ where: { email: testEmail } });
-
+      const user = await prisma.user.findUnique({ where: { email } });
       if (!user) {
-        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+        return res.json({ success: false, error: 'User not found' });
       }
 
-      const valid = await bcrypt.compare(password, user.passwordHash);
-      if (!valid) {
-        return res.status(401).json({ success: false, error: 'Invalid credentials' });
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        return res.json({ success: false, error: 'Invalid password' });
       }
 
-      const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName },
-        config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
-      );
+      const payload = { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName };
+      const token = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
 
-      res.json({
-        success: true,
-        data: {
-          token,
-          user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, role: user.role }
-        }
-      });
+      res.json({ success: true, data: { token, user: payload } });
     } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+      res.json({ success: false, error: error.message, stack: error.stack });
     }
   });
 
