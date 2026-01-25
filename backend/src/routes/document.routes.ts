@@ -12,10 +12,17 @@ import { config } from '../config';
 
 const router = Router();
 
-// Ensure upload directory exists
-const uploadDir = path.resolve(config.upload.uploadDir);
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Use /tmp for serverless environments (Vercel), otherwise use configured dir
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+const uploadDir = isServerless ? '/tmp/uploads' : path.resolve(config.upload.uploadDir);
+
+// Create upload directory only if it doesn't exist (will work in /tmp on serverless)
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn('Could not create upload directory:', err);
 }
 
 // Configure multer for file uploads
