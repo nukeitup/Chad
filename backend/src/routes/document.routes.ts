@@ -9,6 +9,9 @@ import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
 import { config } from '../config';
+import { auditService } from '../services/audit.service';
+import { z } from 'zod';
+import { DocumentStatus } from '../generated/prisma';
 
 const router = Router();
 
@@ -144,6 +147,15 @@ router.post(
         fileSize: req.file.size,
         uploadedById: req.user!.id,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'UPLOAD_DOCUMENT',
+      applicationId: applicationId,
+      tableAffected: 'Document',
+      recordIdAffected: document.id,
+      newValue: document,
     });
 
     res.status(201).json({
@@ -299,6 +311,102 @@ router.get(
     res.json({
       success: true,
       data: { documents },
+    });
+  })
+);
+
+/**
+ * POST /api/v1/documents/:id/approve
+ * Approve a document
+ */
+router.post(
+  '/:id/approve',
+  authenticate,
+  authorize('TEAM_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN'),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+
+    const document = await prisma.document.findUnique({
+      where: { id },
+    });
+
+    if (!document) {
+      throw new ApiError('Document not found', 404);
+    }
+
+    if (document.status !== 'PENDING_REVIEW') {
+      throw new ApiError('Document is not in pending review status', 400);
+    }
+
+    const updatedDocument = await prisma.document.update({
+      where: { id },
+      data: {
+        status: 'APPROVED',
+      },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'APPROVE_DOCUMENT',
+      applicationId: document.applicationId,
+      tableAffected: 'Document',
+      recordIdAffected: document.id,
+      oldValue: document,
+      newValue: updatedDocument,
+    });
+
+    res.json({
+      success: true,
+      data: { document: updatedDocument },
+      message: 'Document approved successfully',
+    });
+  })
+);
+
+/**
+ * POST /api/v1/documents/:id/reject
+ * Reject a document
+ */
+router.post(
+  '/:id/reject',
+  authenticate,
+  authorize('TEAM_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN'),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+
+    const document = await prisma.document.findUnique({
+      where: { id },
+    });
+
+    if (!document) {
+      throw new ApiError('Document not found', 404);
+    }
+
+    if (document.status !== 'PENDING_REVIEW') {
+      throw new ApiError('Document is not in pending review status', 400);
+    }
+
+    const updatedDocument = await prisma.document.update({
+      where: { id },
+      data: {
+        status: 'REJECTED',
+      },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'REJECT_DOCUMENT',
+      applicationId: document.applicationId,
+      tableAffected: 'Document',
+      recordIdAffected: document.id,
+      oldValue: document,
+      newValue: updatedDocument,
+    });
+
+    res.json({
+      success: true,
+      data: { document: updatedDocument },
+      message: 'Document rejected successfully',
     });
   })
 );

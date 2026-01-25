@@ -30,6 +30,8 @@ import {
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon,
   Gavel as ComplianceIcon,
+  AccountTreeOutlined as OwnershipTreeIcon,
+  AssessmentOutlined as ReportsIcon, // Import the new icon
 } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
@@ -66,6 +68,8 @@ const MainLayout = () => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Applications', icon: <ApplicationIcon />, path: '/applications' },
     { text: 'Entities', icon: <EntityIcon />, path: '/entities' },
+    { text: 'Ownership Tree', icon: <OwnershipTreeIcon />, path: '/entities/ownership-tree/:id' },
+    { text: 'Reports', icon: <ReportsIcon />, path: '/reports' }, // New menu item
     ...(canApprove
       ? [{ text: 'Approval Queue', icon: <ComplianceIcon />, path: '/approvals' }]
       : []),

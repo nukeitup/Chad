@@ -5,6 +5,8 @@ import prisma from '../utils/prisma';
 import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
+import { auditService } from '../services/audit.service';
+import { screeningService } from '../services/screening.service';
 
 const router = Router();
 
@@ -105,6 +107,17 @@ router.post(
       });
     }
 
+    // Screen the person
+    const screeningResult = await screeningService.screenPerson(person);
+    await prisma.person.update({
+      where: { id: person.id },
+      data: {
+        ...screeningResult,
+        sanctionsScreeningDate: new Date(),
+        adverseMediaDate: new Date(),
+      },
+    });
+
     // Check if POABOC already exists for this application
     const existingPOABOC = await prisma.personActingOnBehalf.findUnique({
       where: {
@@ -135,6 +148,15 @@ router.post(
       include: {
         person: true,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'ADD_PERSON_ACTING',
+      applicationId: applicationId,
+      tableAffected: 'PersonActingOnBehalf',
+      recordIdAffected: poaboc.id,
+      newValue: poaboc,
     });
 
     res.status(201).json({
@@ -222,7 +244,7 @@ router.put(
     }
 
     // Update person details
-    await prisma.person.update({
+    const updatedPerson = await prisma.person.update({
       where: { id: poaboc.personId },
       data: {
         fullName: data.fullName,
@@ -241,6 +263,17 @@ router.put(
       },
     });
 
+    // Re-screen the person
+    const screeningResult = await screeningService.screenPerson(updatedPerson);
+    await prisma.person.update({
+      where: { id: updatedPerson.id },
+      data: {
+        ...screeningResult,
+        sanctionsScreeningDate: new Date(),
+        adverseMediaDate: new Date(),
+      },
+    });
+
     // Update POABOC record
     const updated = await prisma.personActingOnBehalf.update({
       where: { id },
@@ -252,6 +285,16 @@ router.put(
       include: {
         person: true,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'UPDATE_PERSON_ACTING',
+      applicationId: poaboc.applicationId,
+      tableAffected: 'PersonActingOnBehalf',
+      recordIdAffected: poaboc.id,
+      oldValue: poaboc,
+      newValue: updated,
     });
 
     res.json({
@@ -352,6 +395,15 @@ router.delete(
 
     await prisma.personActingOnBehalf.delete({
       where: { id },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'DELETE_PERSON_ACTING',
+      applicationId: poaboc.applicationId,
+      tableAffected: 'PersonActingOnBehalf',
+      recordIdAffected: poaboc.id,
+      oldValue: poaboc,
     });
 
     res.json({

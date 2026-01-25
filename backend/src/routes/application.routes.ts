@@ -6,6 +6,9 @@ import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
 import { WorkflowState, CDDLevel, RiskRating } from '../generated/prisma';
+import { auditService } from '../services/audit.service';
+import { coreBankingService } from '../services/core-banking.service';
+import { generateChecklist } from '../controllers/compliance.controller';
 
 const router = Router();
 
@@ -96,6 +99,14 @@ router.post(
           },
         },
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'CREATE_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      newValue: application,
     });
 
     res.status(201).json({
@@ -300,6 +311,15 @@ router.put(
       },
     });
 
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'UPDATE_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      oldValue: application,
+      newValue: updated,
+    });
+
     res.json({
       success: true,
       data: { application: updated },
@@ -333,6 +353,14 @@ router.delete(
 
     await prisma.cDDApplication.delete({
       where: { id },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'DELETE_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      oldValue: application,
     });
 
     res.json({
@@ -401,6 +429,15 @@ router.post(
       },
     });
 
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'SUBMIT_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      oldValue: application,
+      newValue: updated,
+    });
+
     res.json({
       success: true,
       data: { application: updated },
@@ -422,6 +459,14 @@ router.post(
 
     const application = await prisma.cDDApplication.findUnique({
       where: { id },
+      include: {
+        entity: true,
+        beneficialOwners: {
+          include: {
+            person: true,
+          },
+        },
+      },
     });
 
     if (!application) {
@@ -432,13 +477,26 @@ router.post(
       throw new ApiError('Application cannot be approved in current state', 400);
     }
 
+    // Create customer in core banking system
+    const coreBankingCustomer = await coreBankingService.createCustomer(application);
+
     const updated = await prisma.cDDApplication.update({
       where: { id },
       data: {
         workflowState: 'APPROVED',
         approvedDate: new Date(),
         approvedById: req.user!.id,
+        coreBankingCustomerId: coreBankingCustomer.id,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'APPROVE_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      oldValue: application,
+      newValue: updated,
     });
 
     res.json({
@@ -482,6 +540,15 @@ router.post(
       },
     });
 
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'RETURN_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      oldValue: application,
+      newValue: updated,
+    });
+
     res.json({
       success: true,
       data: { application: updated },
@@ -521,6 +588,15 @@ router.post(
         rejectedDate: new Date(),
         rejectedReason,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'REJECT_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: application.id,
+      oldValue: application,
+      newValue: updated,
     });
 
     res.json({
@@ -597,6 +673,17 @@ router.get(
       },
     });
   })
+);
+
+/**
+ * GET /api/v1/applications/:id/checklist
+ * Generate compliance checklist for an application
+ */
+router.get(
+  '/:id/checklist',
+  authenticate,
+  authorize('TEAM_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN'),
+  generateChecklist
 );
 
 export default router;

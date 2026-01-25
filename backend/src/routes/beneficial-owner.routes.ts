@@ -5,6 +5,8 @@ import prisma from '../utils/prisma';
 import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
+import { auditService } from '../services/audit.service';
+import { screeningService } from '../services/screening.service';
 
 const router = Router();
 
@@ -118,6 +120,17 @@ router.post(
       });
     }
 
+    // Screen the person
+    const screeningResult = await screeningService.screenPerson(person);
+    await prisma.person.update({
+      where: { id: person.id },
+      data: {
+        ...screeningResult,
+        sanctionsScreeningDate: new Date(),
+        adverseMediaDate: new Date(),
+      },
+    });
+
     // Check if beneficial owner already exists for this application
     const existingBO = await prisma.beneficialOwner.findUnique({
       where: {
@@ -148,6 +161,15 @@ router.post(
       include: {
         person: true,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'ADD_BENEFICIAL_OWNER',
+      applicationId: applicationId,
+      tableAffected: 'BeneficialOwner',
+      recordIdAffected: beneficialOwner.id,
+      newValue: beneficialOwner,
     });
 
     res.status(201).json({
@@ -232,7 +254,7 @@ router.put(
     }
 
     // Update person details
-    await prisma.person.update({
+    const updatedPerson = await prisma.person.update({
       where: { id: beneficialOwner.personId },
       data: {
         fullName: data.fullName,
@@ -248,8 +270,17 @@ router.put(
         idDocumentNumber: data.idDocumentNumber,
         idDocumentExpiry: data.idDocumentExpiry ? new Date(data.idDocumentExpiry) : undefined,
         idDocumentCountry: data.idDocumentCountry,
-        pepStatus: data.pepStatus,
-        pepDetails: data.pepDetails,
+      },
+    });
+
+    // Re-screen the person
+    const screeningResult = await screeningService.screenPerson(updatedPerson);
+    await prisma.person.update({
+      where: { id: updatedPerson.id },
+      data: {
+        ...screeningResult,
+        sanctionsScreeningDate: new Date(),
+        adverseMediaDate: new Date(),
       },
     });
 
@@ -266,6 +297,16 @@ router.put(
       include: {
         person: true,
       },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'UPDATE_BENEFICIAL_OWNER',
+      applicationId: beneficialOwner.applicationId,
+      tableAffected: 'BeneficialOwner',
+      recordIdAffected: beneficialOwner.id,
+      oldValue: beneficialOwner,
+      newValue: updated,
     });
 
     res.json({
@@ -366,6 +407,15 @@ router.delete(
 
     await prisma.beneficialOwner.delete({
       where: { id },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'DELETE_BENEFICIAL_OWNER',
+      applicationId: beneficialOwner.applicationId,
+      tableAffected: 'BeneficialOwner',
+      recordIdAffected: beneficialOwner.id,
+      oldValue: beneficialOwner,
     });
 
     res.json({

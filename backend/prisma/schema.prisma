@@ -110,6 +110,8 @@ model User {
   lastLoginAt       DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  isArchived        Boolean   @default(false)
+  archivedAt        DateTime?
 
   // Relationships
   assignedApplications   CDDApplication[] @relation("AssignedSpecialist")
@@ -155,6 +157,8 @@ model Entity {
 
   createdAt                 DateTime     @default(now())
   updatedAt                 DateTime     @updatedAt
+  isArchived                Boolean      @default(false)
+  archivedAt                DateTime?
 
   // Relationships
   applications              CDDApplication[]
@@ -198,9 +202,12 @@ model CDDApplication {
   returnedReason          String?
   rejectedDate            DateTime?
   rejectedReason          String?
+  coreBankingCustomerId   String?          @unique
 
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
+  isArchived              Boolean         @default(false)
+  archivedAt              DateTime?
 
   // Relationships
   entity                  Entity          @relation(fields: [entityId], references: [id])
@@ -253,6 +260,8 @@ model Person {
 
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
+  isArchived              Boolean         @default(false)
+  archivedAt              DateTime?
 
   // Relationships
   beneficialOwnerRecords  BeneficialOwner[]
@@ -325,6 +334,12 @@ model PersonActingOnBehalf {
   @@index([applicationId])
 }
 
+enum DocumentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 // Document
 model Document {
   id                      String            @id @default(uuid())
@@ -338,9 +353,12 @@ model Document {
   filePath                String
   fileType                String
   fileSize                Int
+  status                  DocumentStatus    @default(PENDING_REVIEW) // New field
 
   uploadDate              DateTime          @default(now())
   uploadedById            String
+  isArchived              Boolean           @default(false)
+  archivedAt              DateTime?
 
   createdAt               DateTime          @default(now())
   updatedAt               DateTime          @updatedAt

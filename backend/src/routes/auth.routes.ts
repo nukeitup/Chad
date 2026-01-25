@@ -7,6 +7,7 @@ import prisma from '../utils/prisma';
 import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 import { AuthenticatedRequest, JWTPayload } from '../types';
+import { auditService } from '../services/audit.service';
 
 const router = Router();
 
@@ -87,6 +88,15 @@ router.post(
           role: user.role,
         },
       },
+    });
+
+    // Audit log
+    await auditService.log({
+      userId: user.id,
+      actionType: 'USER_LOGIN',
+      tableAffected: 'User',
+      recordIdAffected: user.id,
+      ipAddress: req.ip,
     });
   })
 );
@@ -213,7 +223,7 @@ router.post(
 router.post(
   '/logout',
   authenticate,
-  asyncHandler(async (_req: AuthenticatedRequest, res: Response) => {
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     // JWT tokens are stateless, so we just return success
     // Client should remove the token from storage
     res.json({

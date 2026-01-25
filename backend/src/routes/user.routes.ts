@@ -6,6 +6,7 @@ import prisma from '../utils/prisma';
 import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
+import { auditService } from '../services/audit.service';
 
 const router = Router();
 
@@ -224,6 +225,14 @@ router.post(
       },
     });
 
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'CREATE_USER',
+      tableAffected: 'User',
+      recordIdAffected: user.id,
+      newValue: user,
+    });
+
     res.status(201).json({
       success: true,
       data: { user },
@@ -285,6 +294,15 @@ router.put(
       },
     });
 
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'UPDATE_USER',
+      tableAffected: 'User',
+      recordIdAffected: user.id,
+      oldValue: existingUser,
+      newValue: user,
+    });
+
     res.json({
       success: true,
       data: { user },
@@ -318,9 +336,18 @@ router.delete(
     }
 
     // Soft delete - deactivate instead of hard delete
-    await prisma.user.update({
+    const updated = await prisma.user.update({
       where: { id },
       data: { isActive: false },
+    });
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'DEACTIVATE_USER',
+      tableAffected: 'User',
+      recordIdAffected: user.id,
+      oldValue: user,
+      newValue: updated,
     });
 
     res.json({

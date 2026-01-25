@@ -16,65 +16,13 @@ import personActingRoutes from './routes/person-acting.routes';
 import documentRoutes from './routes/document.routes';
 import referenceRoutes from './routes/reference.routes';
 import userRoutes from './routes/user.routes';
+import nzbnRoutes from './routes/nzbn.routes';
 
 /**
  * Create and configure Express application
  */
 export function createApp(): Express {
-  const app = express();
-
-  // Security middleware
-  app.use(helmet());
-
-  // CORS configuration
-  app.use(
-    cors({
-      origin: config.corsOrigin,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  );
-
-  // Rate limiting
-  const limiter = rateLimit({
-    windowMs: config.rateLimit.windowMs,
-    max: config.rateLimit.maxRequests,
-    message: {
-      success: false,
-      error: 'Too many requests, please try again later.',
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  app.use(limiter);
-
-  // Request parsing
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-  // Compression
-  app.use(compression());
-
-  // Logging
-  if (config.nodeEnv === 'development') {
-    app.use(morgan('dev'));
-  } else {
-    app.use(morgan('combined'));
-  }
-
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.json({
-      success: true,
-      data: {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        environment: config.nodeEnv,
-      },
-    });
-  });
-
+...
   // API routes
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/applications', applicationRoutes);
@@ -84,6 +32,7 @@ export function createApp(): Express {
   app.use('/api/v1/documents', documentRoutes);
   app.use('/api/v1/reference', referenceRoutes);
   app.use('/api/v1/users', userRoutes);
+  app.use('/api/v1/nzbn', nzbnRoutes);
 
   // Error handling
   app.use(notFoundHandler);

@@ -227,4 +227,10 @@ export const usersApi = {
     api.delete(`/users/${id}`),
 };
 
+// NZBN API
+export const nzbnApi = {
+  search: (query: string) =>
+    api.get('/nzbn/search', { params: { q: query } }),
+};
+
 export default api;

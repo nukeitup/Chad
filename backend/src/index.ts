@@ -1,6 +1,8 @@
 import { createApp } from './app';
 import { config } from './config';
 import prisma from './utils/prisma';
+import { scheduleFatfUpdate } from './jobs/fatf-update.job';
+import { scheduleCddRefreshJob } from './jobs/cdd-refresh.job';
 
 const app = createApp();
 
@@ -8,7 +10,8 @@ const app = createApp();
  * Graceful shutdown handler
  */
 async function gracefulShutdown(signal: string): Promise<void> {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  console.log(`
+${signal} received. Starting graceful shutdown...`);
 
   try {
     await prisma.$disconnect();
@@ -44,6 +47,10 @@ async function startServer(): Promise<void> {
     // Test database connection
     await prisma.$connect();
     console.log('Database connected successfully.');
+
+    // Schedule jobs
+    scheduleFatfUpdate();
+    scheduleCddRefreshJob();
 
     // Start HTTP server
     app.listen(config.port, () => {

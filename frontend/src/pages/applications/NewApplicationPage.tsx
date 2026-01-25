@@ -69,7 +69,7 @@ import {
 } from '@mui/icons-material';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../store';
-import api, { applicationsApi, referenceApi } from '../../services/api';
+import api, { applicationsApi, referenceApi, nzbnApi } from '../../services/api';
 import {
   Entity,
   EntityType,
@@ -270,26 +270,11 @@ const NewApplicationPage = () => {
     setError(null);
 
     try {
-      const isNZBN = /^\d{13}$/.test(searchQuery.trim());
-
-      if (isNZBN) {
-        const response = await api.get(`/entities/nzbn/${searchQuery.trim()}`);
-        if (response.data.success && response.data.data) {
-          setSearchResults([{
-            nzbn: response.data.data.nzbn,
-            entityName: response.data.data.legalName,
-            entityTypeName: response.data.data.entityType,
-            entityStatusDescription: response.data.data.entityStatus,
-            registrationDate: response.data.data.incorporationDate,
-          }]);
-        } else {
-          setSearchResults([]);
-        }
+      const response = await nzbnApi.search(searchQuery.trim());
+      if (response.data.success) {
+        setSearchResults(response.data.data.items || []);
       } else {
-        const response = await api.get(`/entities/search?q=${encodeURIComponent(searchQuery)}`);
-        if (response.data.success) {
-          setSearchResults(response.data.data || []);
-        }
+        setSearchResults([]);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to search entities');
