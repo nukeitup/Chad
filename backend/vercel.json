@@ -4,8 +4,6 @@
   "buildCommand": "mkdir -p public && echo 'API Server' > public/index.html",
   "outputDirectory": "public",
   "rewrites": [
-    { "source": "/api/v1/(.*)", "destination": "/api" },
-    { "source": "/health", "destination": "/api" },
-    { "source": "/test", "destination": "/api" }
+    { "source": "/((?!api$).*)", "destination": "/api" }
   ]
 }
