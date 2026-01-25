@@ -11,6 +11,7 @@ import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/auth/LoginPage';
 import Dashboard from './pages/Dashboard';
 import ApplicationsPage from './pages/applications/ApplicationsPage';
+import NewApplicationPage from './pages/applications/NewApplicationPage';
 
 // Protected Route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,7 +45,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="applications" element={<ApplicationsPage />} />
               <Route path="applications/:id" element={<div>Application Details (Coming Soon)</div>} />
-              <Route path="applications/new" element={<div>New Application (Coming Soon)</div>} />
+              <Route path="applications/new" element={<NewApplicationPage />} />
               <Route path="entities" element={<div>Entities (Coming Soon)</div>} />
               <Route path="approvals" element={<div>Approval Queue (Coming Soon)</div>} />
               <Route path="users" element={<div>Users (Coming Soon)</div>} />
