@@ -110,6 +110,45 @@ export function createApp(): Express {
     }
   });
 
+  // Login debug endpoint
+  app.get('/login-debug', async (req, res) => {
+    try {
+      const prisma = require('./utils/prisma').default;
+      const bcrypt = require('bcryptjs');
+
+      // Step 1: Find user
+      const user = await prisma.user.findUnique({
+        where: { email: 'ninalambon.nz@gmail.com' }
+      });
+
+      if (!user) {
+        return res.json({ success: false, step: 'findUser', error: 'User not found' });
+      }
+
+      // Step 2: Check password hash exists
+      const hashInfo = {
+        exists: !!user.passwordHash,
+        length: user.passwordHash?.length,
+        prefix: user.passwordHash?.substring(0, 10)
+      };
+
+      // Step 3: Try bcrypt compare
+      const isValid = await bcrypt.compare('Password123!', user.passwordHash);
+
+      res.json({
+        success: true,
+        data: {
+          userId: user.id,
+          email: user.email,
+          hashInfo,
+          passwordValid: isValid
+        }
+      });
+    } catch (error: any) {
+      res.json({ success: false, error: error.message, step: 'unknown', stack: error.stack });
+    }
+  });
+
   // API routes
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/applications', applicationRoutes);
