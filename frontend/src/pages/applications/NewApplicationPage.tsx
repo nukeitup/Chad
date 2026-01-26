@@ -221,14 +221,7 @@ const NewApplicationPage = () => {
 
   // Documents state
   const [documents, setDocuments] = useState<DocumentUpload[]>([]);
-  const [requiredDocuments, setRequiredDocuments] = useState<string[]>([
-    'Certificate of Incorporation',
-    'Company Constitution',
-    'Register of Directors',
-    'Register of Shareholders',
-    'Board Resolution',
-    'Company Extract',
-  ]);
+  const [dynamicRequiredDocuments, setDynamicRequiredDocuments] = useState<string[]>([]);
 
   // Form data for overseas entity
   const [overseasEntity, setOverseasEntity] = useState({
@@ -463,6 +456,24 @@ const NewApplicationPage = () => {
     }
   }, [activeStep, beneficialOwners, selectedEntity]);
 
+  // Fetch mandatory document types when CDD level is determined
+  useEffect(() => {
+    const fetchMandatoryDocuments = async () => {
+      if (cddDetermination?.level) {
+        try {
+          const response = await api.get(`/cdd/mandatory-document-types?cddLevel=${cddDetermination.level}`);
+          if (response.data.success) {
+            setDynamicRequiredDocuments(response.data.data.mandatoryDocumentTypes);
+          }
+        } catch (err: any) {
+          setError(err.response?.data?.error || 'Failed to fetch mandatory document types');
+          setDynamicRequiredDocuments([]);
+        }
+      }
+    };
+    fetchMandatoryDocuments();
+  }, [cddDetermination?.level]); // Trigger when CDD level changes
+
   const handleNext = () => {
     setActiveStep((prev) => prev + 1);
   };
@@ -610,7 +621,7 @@ const NewApplicationPage = () => {
       return;
     }
     // Check if all required documents are uploaded (excluding Company Extract for NZ entities if automatically provided)
-    const missingDocs = requiredDocuments.filter(docType => {
+    const missingDocs = dynamicRequiredDocuments.filter(docType => {
       if (docType === 'Company Extract' && selectedEntity?.countryOfIncorporation === 'NZ') {
         return false; // Automatically provided for NZ entities
       }
@@ -1537,7 +1548,7 @@ const NewApplicationPage = () => {
         </Typography>
 
         <List>
-          {requiredDocuments.map((docType, index) => {
+          {dynamicRequiredDocuments.map((docType, index) => {
             const uploadedDoc = documents.find(d => d.documentType === docType);
             return (
               <ListItem key={index} divider={index < requiredDocuments.length - 1}>

@@ -287,4 +287,29 @@ router.get(
   })
 );
 
+/**
+ * GET /api/v1/cdd/mandatory-document-types
+ *
+ * Returns a list of mandatory document types for a given CDD level.
+ * This respects the test mode setting for non-mandatory documents.
+ */
+router.get(
+  '/mandatory-document-types',
+  authenticate,
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { cddLevel } = req.query;
+
+    if (!cddLevel || !['SIMPLIFIED', 'STANDARD', 'ENHANCED'].includes(cddLevel as string)) {
+      throw new ApiError('Invalid or missing cddLevel query parameter', 400);
+    }
+
+    const mandatoryDocumentTypes = cddDeterminationService.getMandatoryEntityDocumentTypes(cddLevel as CDDLevel);
+
+    res.json({
+      success: true,
+      data: { mandatoryDocumentTypes },
+    });
+  })
+);
+
 export default router;
