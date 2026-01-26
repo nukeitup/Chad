@@ -246,6 +246,15 @@ const ApplicationDetailPage = () => {
         </Box>
 
         <Box sx={{ display: 'flex', gap: 2 }}>
+          {application.entity?.id && (
+            <Button
+              variant="outlined"
+              startIcon={<PublicIcon />}
+              onClick={() => navigate(`/ownership-tree/${application.entity.id}`)}
+            >
+              View Org Chart
+            </Button>
+          )}
           {canEdit && isOwner && (
             <Button
               variant="outlined"

@@ -227,6 +227,7 @@ const NewApplicationPage = () => {
     'Register of Directors',
     'Register of Shareholders',
     'Board Resolution',
+    'Company Extract',
   ]);
 
   // Form data for overseas entity
@@ -721,13 +722,13 @@ const NewApplicationPage = () => {
                           {result.entityName}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          NZBN: {result.nzbn}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
                           Type: {result.entityTypeName}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Status: {result.entityStatusDescription}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Company Number (NZBN): {result.nzbn}
                         </Typography>
                       </Box>
                       <Button variant="outlined" size="small">
@@ -977,6 +978,13 @@ const NewApplicationPage = () => {
                         {bo.pepStatus !== 'NOT_PEP' && (
                           <Chip label="PEP" size="small" color="error" />
                         )}
+                        {cddDetermination && (
+                          <Chip
+                            label={bo.ownershipPercentage > 25 || cddDetermination.level === 'ENHANCED' ? 'AML Required' : 'AML Not Required'}
+                            size="small"
+                            color={bo.ownershipPercentage > 25 || cddDetermination.level === 'ENHANCED' ? 'error' : 'success'}
+                          />
+                        )}
                       </Box>
                       <Chip
                         label="Not Verified"
@@ -1184,7 +1192,7 @@ const NewApplicationPage = () => {
   const renderStep3_PersonsActing = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 4 of 7: Persons Acting on Behalf
+        Step 4 of 7: Directors
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -1197,7 +1205,7 @@ const NewApplicationPage = () => {
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="subtitle1" fontWeight={600}>
-            Authorised Persons ({personsActing.length})
+            Directors ({personsActing.length})
           </Typography>
           <Button
             variant="contained"
@@ -1231,6 +1239,14 @@ const NewApplicationPage = () => {
                       </Typography>
                       {pa.pepStatus !== 'NOT_PEP' && (
                         <Chip label="PEP" size="small" color="error" sx={{ mt: 1 }} />
+                      )}
+                      {cddDetermination && (
+                        <Chip
+                          label={cddDetermination.level === 'SIMPLIFIED' ? 'Doesn\'t require AML verification' : 'Requires AML verification'}
+                          size="small"
+                          color={cddDetermination.level === 'SIMPLIFIED' ? 'success' : 'error'}
+                          sx={{ mt: 1, ml: 1 }}
+                        />
                       )}
                     </Box>
                   </Box>
@@ -1506,7 +1522,9 @@ const NewApplicationPage = () => {
                   secondary={uploadedDoc ? uploadedDoc.file.name : 'Not uploaded'}
                 />
                 <ListItemSecondaryAction>
-                  {uploadedDoc ? (
+                  {docType === 'Company Extract' && selectedEntity?.countryOfIncorporation === 'NZ' ? (
+                    <Chip label="Automatically Provided" color="info" size="small" />
+                  ) : uploadedDoc ? (
                     <IconButton
                       edge="end"
                       onClick={() => handleRemoveDocument(uploadedDoc.id)}
@@ -1537,58 +1555,7 @@ const NewApplicationPage = () => {
         </List>
       </Paper>
 
-      <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Beneficial Owner ID Documents
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Upload identity documents for each beneficial owner (passport, driver's license, or national ID).
-        </Typography>
 
-        {beneficialOwners.map((bo, index) => {
-          const boDocType = `BO_ID_${index}`;
-          const uploadedDoc = documents.find(d => d.documentType === boDocType);
-          return (
-            <Paper key={index} variant="outlined" sx={{ p: 2, mb: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  {uploadedDoc ? (
-                    <CheckIcon color="success" />
-                  ) : (
-                    <PersonIcon color="action" />
-                  )}
-                  <Box>
-                    <Typography variant="subtitle2">{bo.fullName}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {uploadedDoc ? uploadedDoc.file.name : 'ID document required'}
-                    </Typography>
-                  </Box>
-                </Box>
-                {uploadedDoc ? (
-                  <IconButton onClick={() => handleRemoveDocument(uploadedDoc.id)} color="error">
-                    <DeleteIcon />
-                  </IconButton>
-                ) : (
-                  <Button
-                    variant="outlined"
-                    component="label"
-                    size="small"
-                    startIcon={<UploadIcon />}
-                  >
-                    Upload
-                    <input
-                      type="file"
-                      hidden
-                      onChange={(e) => handleFileUpload(e, boDocType)}
-                      accept=".pdf,.jpg,.jpeg,.png"
-                    />
-                  </Button>
-                )}
-              </Box>
-            </Paper>
-          );
-        })}
-      </Paper>
     </Box>
   );
 

@@ -156,25 +156,21 @@ const Dashboard = () => {
       {/* Search and New Application */}
       <Card sx={{ mb: 4 }}>
         <CardContent sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <TextField
-            placeholder="Search by business name or application number..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ flex: 1 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" />
-                </InputAdornment>
-              ),
-            }}
-          />
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => navigate('/applications/new')}
+            sx={{ flexShrink: 0 }}
           >
-            New Application
+            Start New Application
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ApplicationIcon />}
+            onClick={() => navigate('/applications?status=DRAFT,RETURNED')}
+            sx={{ flexShrink: 0 }}
+          >
+            Resume Application
           </Button>
         </CardContent>
       </Card>
@@ -225,9 +221,14 @@ const Dashboard = () => {
                 <Typography variant="h6" fontWeight={600}>
                   My Applications
                 </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button size="small" onClick={() => navigate('/applications')}>
                   View All
                 </Button>
+                <Button size="small" onClick={() => navigate('/ownership-tree')}>
+                  View Org Chart
+                </Button>
+              </Box>
               </Box>
               <TableContainer component={Paper} variant="outlined">
                 <Table>
