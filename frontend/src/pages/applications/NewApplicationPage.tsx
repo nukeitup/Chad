@@ -638,6 +638,9 @@ const NewApplicationPage = () => {
     setError(null);
 
     try {
+      console.log('Attempting to create application with selectedEntity:', selectedEntity);
+      console.log('entityId for API call:', selectedEntity?.id);
+
       // Create the application
       const appResponse = await applicationsApi.create({
         entityId: selectedEntity.id,
