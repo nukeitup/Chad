@@ -271,6 +271,7 @@ const NewApplicationPage = () => {
       const entityResponse = await api.get(`/entities/nzbn/${nzbn}`);
       if (entityResponse.data.success) {
         setSelectedEntity(entityResponse.data.data);
+        console.log('Selected Entity after NZBN selection:', entityResponse.data.data);
         await determineCDDLevel(entityResponse.data.data);
       }
 
@@ -352,6 +353,7 @@ const NewApplicationPage = () => {
       const response = await api.post('/entities/overseas', overseasEntity);
       if (response.data.success) {
         setSelectedEntity(response.data.data);
+        console.log('Selected Entity after Overseas creation:', response.data.data);
         await determineCDDLevel(response.data.data);
         setActiveStep(1);
       }
