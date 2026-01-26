@@ -10,7 +10,7 @@
  * - Demonstrates different CDD scenarios
  */
 
-import { MockNZBNEntity } from '../services/mock-data.service';
+import { MockNZBNEntity } from '../types/mock-data.types';
 
 // ============================================================
 // SIMPLE OWNERSHIP - Direct individual shareholders
