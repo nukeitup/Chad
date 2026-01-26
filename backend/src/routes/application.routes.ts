@@ -7,6 +7,8 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
 import { WorkflowState, CDDLevel, RiskRating } from '../generated/prisma';
 import { auditService } from '../services/audit.service';
+import { cddDeterminationService } from '../services/cdd-determination.service';
+import { config } from '../config';
 import { generateChecklist } from '../controllers/compliance.controller';
 import { nzbnImportService } from '../services/nzbn-import.service';
 
@@ -406,6 +408,27 @@ router.post(
     if (errors.length > 0) {
       throw new ApiError(`Application incomplete: ${errors.join(', ')}`, 400);
     }
+
+    // --- Document Validation ---
+    if (!config.testMode) {
+      const requiredDocumentTypes = cddDeterminationService.getMandatoryEntityDocumentTypes(
+        application.cddLevel
+      );
+
+      const uploadedDocumentTypes = application.documents!.map((doc) => doc.documentType);
+
+      const missingDocuments = requiredDocumentTypes.filter(
+        (requiredDoc) => !uploadedDocumentTypes.includes(requiredDoc)
+      );
+
+      if (missingDocuments.length > 0) {
+        throw new ApiError(
+          `Missing required documents: ${missingDocuments.join(', ')}`,
+          400
+        );
+      }
+    }
+    // --- End Document Validation ---
 
     const updated = await prisma.cDDApplication.update({
       where: { id },

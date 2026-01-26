@@ -42,4 +42,6 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || ['http://localhost:3000'],
 };
 
+console.log(`Backend running in Test Mode: ${config.testMode}`); // Added log
+
 export default config;
