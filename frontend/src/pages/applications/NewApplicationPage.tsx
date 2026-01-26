@@ -202,6 +202,23 @@ const NewApplicationPage = () => {
     factors: { category: string; description: string; points: number }[];
   } | null>(null);
 
+  // NZBN data for auto-import
+  const [nzbnData, setNzbnData] = useState<{
+    shareholders: Array<{
+      shareholderName: string;
+      shareholderType: 'Individual' | 'Company';
+      numberOfShares: number;
+      totalShares?: number;
+      allocationDate: string;
+    }>;
+    directors: Array<{
+      directorNumber: string;
+      fullName: string;
+      appointmentDate: string;
+      residentialAddress?: string;
+    }>;
+  } | null>(null);
+
   // Documents state
   const [documents, setDocuments] = useState<DocumentUpload[]>([]);
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>([
@@ -249,12 +266,75 @@ const NewApplicationPage = () => {
     setError(null);
 
     try {
-      const response = await api.get(`/entities/nzbn/${nzbn}`);
-      if (response.data.success) {
-        setSelectedEntity(response.data.data);
-        await determineCDDLevel(response.data.data);
-        setActiveStep(1);
+      // First, get/create entity in our database
+      const entityResponse = await api.get(`/entities/nzbn/${nzbn}`);
+      if (entityResponse.data.success) {
+        setSelectedEntity(entityResponse.data.data);
+        await determineCDDLevel(entityResponse.data.data);
       }
+
+      // Then, fetch full NZBN details including shareholders and directors
+      const nzbnResponse = await nzbnApi.getByNzbn(nzbn);
+      if (nzbnResponse.data.success && nzbnResponse.data.data) {
+        const nzbnDetails = nzbnResponse.data.data;
+
+        // Store NZBN data for later import
+        setNzbnData({
+          shareholders: nzbnDetails.shareholders || [],
+          directors: nzbnDetails.directors || [],
+        });
+
+        // Auto-populate beneficial owners from shareholders with >25% ownership
+        const totalShares = nzbnDetails.shareholders?.reduce(
+          (sum: number, s: any) => sum + s.numberOfShares, 0
+        ) || 1;
+
+        const autoPopulatedBOs: BeneficialOwnerForm[] = [];
+        const autoPopulatedPAs: PersonActingForm[] = [];
+
+        // Add shareholders with >25% as beneficial owners
+        for (const shareholder of nzbnDetails.shareholders || []) {
+          const shareholderTotal = shareholder.totalShares || totalShares;
+          const ownershipPct = (shareholder.numberOfShares / shareholderTotal) * 100;
+
+          if (ownershipPct >= 25) {
+            autoPopulatedBOs.push({
+              fullName: shareholder.shareholderName,
+              dateOfBirth: '',
+              residentialStreet: '',
+              residentialCity: '',
+              residentialPostcode: '',
+              residentialCountry: 'New Zealand',
+              nationality: 'New Zealand',
+              ownershipPercentage: Math.round(ownershipPct * 100) / 100,
+              ownershipBasis: ['ULTIMATE_OWNERSHIP'],
+              isNominee: false,
+              pepStatus: 'NOT_PEP',
+            });
+          }
+        }
+
+        // Add directors as persons acting on behalf
+        for (const director of nzbnDetails.directors || []) {
+          autoPopulatedPAs.push({
+            fullName: director.fullName,
+            dateOfBirth: '',
+            residentialStreet: '',
+            residentialCity: '',
+            residentialPostcode: '',
+            residentialCountry: 'New Zealand',
+            nationality: 'New Zealand',
+            roleTitle: 'Director',
+            authorityDocumentType: 'Companies Office Registration',
+            pepStatus: 'NOT_PEP',
+          });
+        }
+
+        setBeneficialOwners(autoPopulatedBOs);
+        setPersonsActing(autoPopulatedPAs);
+      }
+
+      setActiveStep(1);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to fetch entity details');
     } finally {

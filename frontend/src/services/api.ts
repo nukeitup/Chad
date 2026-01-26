@@ -249,6 +249,26 @@ export const usersApi = {
 export const nzbnApi = {
   search: (query: string) =>
     api.get('/nzbn/search', { params: { q: query } }),
+
+  getByNzbn: (nzbn: string) =>
+    api.get(`/nzbn/${nzbn}`),
+
+  importToApplication: (applicationId: string, data: {
+    shareholders: Array<{
+      shareholderName: string;
+      shareholderType: 'Individual' | 'Company';
+      numberOfShares: number;
+      totalShares?: number;
+      allocationDate: string;
+    }>;
+    directors: Array<{
+      directorNumber: string;
+      fullName: string;
+      appointmentDate: string;
+      residentialAddress?: string;
+    }>;
+  }) =>
+    api.post(`/applications/${applicationId}/import-nzbn`, data),
 };
 
 // System API
