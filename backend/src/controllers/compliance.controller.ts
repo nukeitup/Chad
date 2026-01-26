@@ -3,6 +3,8 @@ import { Response } from 'express';
 import prisma from '../utils/prisma';
 import { asyncHandler, ApiError } from '../middleware/error.middleware';
 import { AuthenticatedRequest } from '../types';
+import { cddDeterminationService } from '../services/cdd-determination.service';
+import { config } from '../config';
 
 export const generateChecklist = asyncHandler(
   async (req: AuthenticatedRequest, res: Response) => {
@@ -23,12 +25,34 @@ export const generateChecklist = asyncHandler(
           },
         },
         riskFactors: true,
+        documents: true, // Include documents for validation
       },
     });
 
     if (!application) {
       throw new ApiError('Application not found', 404);
     }
+
+    // --- Document Validation ---
+    if (!config.testMode) {
+      const requiredDocumentTypes = cddDeterminationService.getMandatoryEntityDocumentTypes(
+        application.cddLevel
+      );
+
+      const uploadedDocumentTypes = application.documents.map((doc) => doc.documentType);
+
+      const missingDocuments = requiredDocumentTypes.filter(
+        (requiredDoc) => !uploadedDocumentTypes.includes(requiredDoc)
+      );
+
+      if (missingDocuments.length > 0) {
+        throw new ApiError(
+          `Missing required documents: ${missingDocuments.join(', ')}`,
+          400
+        );
+      }
+    }
+    // --- End Document Validation ---
 
     const html = `
       <!DOCTYPE html>

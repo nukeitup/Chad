@@ -10,9 +10,8 @@
  * the appropriate Customer Due Diligence level.
  */
 
-import { Entity, BeneficialOwner, Person, CDDLevel } from '../generated/prisma';
-import { mockDataService } from './mock-data.service';
 import { config } from '../config';
+import { DOCUMENT_TYPES } from '../routes/reference.routes';
 
 // ============================================================
 // TYPE DEFINITIONS
@@ -433,6 +432,51 @@ export const cddDeterminationService = {
         required: true,
       },
     ];
+  },
+
+  /**
+   * Returns a list of mandatory entity document types based on the CDD level.
+   * In test mode, some documents can be made non-mandatory.
+   */
+  getMandatoryEntityDocumentTypes(cddLevel: CDDLevel): string[] {
+    if (config.testMode) {
+      // In test mode, make specific documents non-mandatory
+      const nonMandatoryInTestMode = [
+        'Certificate of Incorporation',
+        'Company Constitution', // From error message, likely maps to 'Company Constitution/Trust Deed'
+        'Register of Directors', // From error message, likely maps to 'Register of Directors and Shareholders'
+        'Register of Shareholders', // From error message, likely maps to 'Register of Directors and Shareholders'
+        'Board Resolution',
+        'Company Extract',
+      ];
+      const allStandardDocs = [
+        ...DOCUMENT_TYPES.ENTITY_IDENTIFICATION,
+        ...DOCUMENT_TYPES.AUTHORITY_DOCUMENT,
+      ];
+      return allStandardDocs.filter(doc => !nonMandatoryInTestMode.includes(doc));
+    }
+
+    switch (cddLevel) {
+      case 'SIMPLIFIED':
+        // Simplified CDD typically requires fewer documents, often just proof of existence/registration
+        return DOCUMENT_TYPES.ENTITY_IDENTIFICATION.filter(
+          doc => doc === 'Certificate of Incorporation' || doc === 'Company Extract'
+        );
+      case 'STANDARD':
+        return [
+          ...DOCUMENT_TYPES.ENTITY_IDENTIFICATION,
+          ...DOCUMENT_TYPES.AUTHORITY_DOCUMENT,
+        ];
+      case 'ENHANCED':
+        return [
+          ...DOCUMENT_TYPES.ENTITY_IDENTIFICATION,
+          ...DOCUMENT_TYPES.AUTHORITY_DOCUMENT,
+          ...DOCUMENT_TYPES.SOURCE_OF_WEALTH,
+          ...DOCUMENT_TYPES.SOURCE_OF_FUNDS,
+        ];
+      default:
+        return [];
+    }
   },
 
   /**

@@ -24,7 +24,7 @@ const ENTITY_TYPES = {
   ],
 };
 
-const DOCUMENT_TYPES = {
+export const DOCUMENT_TYPES = {
   ENTITY_IDENTIFICATION: [
     'Certificate of Incorporation',
     'Company Extract',
