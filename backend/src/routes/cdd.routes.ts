@@ -121,12 +121,12 @@ router.post(
  * POST /api/v1/applications/:id/calculate-risk
  *
  * Calculates the overall risk rating for an application
- * based on entity, geographic, product, transaction, and beneficial owner factors.
+ * based on entity characteristics, geographic factors, and beneficial owner screening.
  *
- * Request body (optional):
- * - products: string[] - Override products for calculation
- * - anticipatedMonthlyVolume: number
- * - anticipatedMonthlyValue: number
+ * Risk factors are based on publicly available information only:
+ * - Entity type and ownership complexity
+ * - Geographic risk (FATF jurisdiction status)
+ * - Beneficial owner PEP status, sanctions, and adverse media
  *
  * Returns:
  * - Risk Rating (LOW, MEDIUM, HIGH, or PROHIBITED)
@@ -162,19 +162,10 @@ router.post(
       throw new ApiError('Application has no associated entity', 400);
     }
 
-    // Use request body overrides or application data
-    const products = req.body?.products || application.productsRequested || [];
-    const relationship = {
-      anticipatedMonthlyVolume: req.body?.anticipatedMonthlyVolume || application.anticipatedMonthlyVolume,
-      anticipatedMonthlyValue: req.body?.anticipatedMonthlyValue || Number(application.anticipatedMonthlyValue) || 0,
-    };
-
-    // Calculate risk rating
+    // Calculate risk rating based on public data factors only
     const riskResult = await cddDeterminationService.calculateRiskRating(
       application.entity,
-      application.beneficialOwners,
-      products,
-      relationship
+      application.beneficialOwners
     );
 
     // Update application with calculated risk

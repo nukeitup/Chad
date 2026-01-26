@@ -45,7 +45,6 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Slider,
   LinearProgress,
 } from '@mui/material';
 import {
@@ -62,7 +61,6 @@ import {
   Person as PersonIcon,
   Upload as UploadIcon,
   ExpandMore as ExpandMoreIcon,
-  AccountBalance as AccountBalanceIcon,
   Description as DescriptionIcon,
   Gavel as GavelIcon,
   VerifiedUser as VerifiedUserIcon,
@@ -89,8 +87,6 @@ const steps = [
   'CDD Level Determination',
   'Beneficial Ownership',
   'Persons Acting on Behalf',
-  'Nature & Purpose',
-  'Products & Volumes',
   'Risk Assessment',
   'Documents',
   'Review & Submit',
@@ -148,14 +144,6 @@ interface DocumentUpload {
   error?: string;
 }
 
-interface Product {
-  code: string;
-  name: string;
-  description: string;
-  riskWeight: number;
-  selected: boolean;
-}
-
 const NewApplicationPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
@@ -205,35 +193,6 @@ const NewApplicationPage = () => {
     roleTitle: '',
     authorityDocumentType: '',
     pepStatus: 'NOT_PEP',
-  });
-
-  // Nature & Purpose state
-  const [naturePurpose, setNaturePurpose] = useState({
-    relationshipPurpose: '',
-    primaryBusinessActivity: '',
-    expectedTransactionTypes: [] as string[],
-    geographicFocus: [] as string[],
-    sourceOfFunds: '',
-    sourceOfWealth: '',
-  });
-
-  // Products & Volumes state
-  const [products, setProducts] = useState<Product[]>([
-    { code: 'TRANSACTION_ACCOUNT', name: 'Transaction Account', description: 'Business current account', riskWeight: 5, selected: false },
-    { code: 'SAVINGS_ACCOUNT', name: 'Savings Account', description: 'Business savings account', riskWeight: 3, selected: false },
-    { code: 'TERM_DEPOSIT', name: 'Term Deposit', description: 'Fixed-term deposit', riskWeight: 3, selected: false },
-    { code: 'BUSINESS_LOAN', name: 'Business Loan', description: 'Commercial lending', riskWeight: 10, selected: false },
-    { code: 'OVERDRAFT', name: 'Overdraft Facility', description: 'Overdraft on account', riskWeight: 8, selected: false },
-    { code: 'FOREIGN_EXCHANGE', name: 'Foreign Exchange', description: 'Currency exchange services', riskWeight: 15, selected: false },
-    { code: 'TRADE_FINANCE', name: 'Trade Finance', description: 'Letters of credit, trade facilities', riskWeight: 20, selected: false },
-    { code: 'MERCHANT_SERVICES', name: 'Merchant Services', description: 'Payment processing', riskWeight: 12, selected: false },
-  ]);
-  const [anticipatedVolumes, setAnticipatedVolumes] = useState({
-    monthlyTransactionCount: 0,
-    monthlyTransactionValue: 0,
-    largestSingleTransaction: 0,
-    internationalTransactions: false,
-    internationalCountries: [] as string[],
   });
 
   // Risk Assessment state
@@ -358,73 +317,56 @@ const NewApplicationPage = () => {
     setCddDetermination(determination);
   };
 
-  // Calculate risk assessment
+  // Calculate risk assessment based on public data only
   const calculateRiskAssessment = () => {
     const factors: { category: string; description: string; points: number }[] = [];
     let totalScore = 0;
 
-    // Entity risk factors
+    // Entity risk factors (0-35 points)
     if (selectedEntity?.entityType === 'TRUST') {
-      factors.push({ category: 'Entity', description: 'Entity type: Trust (higher risk)', points: 15 });
-      totalScore += 15;
+      factors.push({ category: 'Entity', description: 'Entity type: Trust (higher risk)', points: 20 });
+      totalScore += 20;
     } else if (selectedEntity?.entityType === 'FOUNDATION') {
-      factors.push({ category: 'Entity', description: 'Entity type: Foundation', points: 10 });
-      totalScore += 10;
-    } else {
-      factors.push({ category: 'Entity', description: 'Entity type: Standard company', points: 5 });
-      totalScore += 5;
+      factors.push({ category: 'Entity', description: 'Entity type: Foundation', points: 15 });
+      totalScore += 15;
+    } else if (selectedEntity?.entityType === 'NZ_LIMITED_PARTNERSHIP') {
+      factors.push({ category: 'Entity', description: 'Entity type: Limited Partnership', points: 8 });
+      totalScore += 8;
     }
 
-    // Beneficial owner risk factors
+    // Ownership complexity
+    if (beneficialOwners.length > 4) {
+      factors.push({ category: 'Entity', description: 'Complex ownership structure', points: 15 });
+      totalScore += 15;
+    } else if (beneficialOwners.length > 2) {
+      factors.push({ category: 'Entity', description: 'Moderate ownership complexity', points: 8 });
+      totalScore += 8;
+    }
+
+    // Geographic risk factors (0-35 points)
+    if (selectedEntity?.countryOfIncorporation && selectedEntity.countryOfIncorporation !== 'NZ') {
+      factors.push({ category: 'Geographic', description: 'Overseas entity incorporation', points: 15 });
+      totalScore += 15;
+    }
+
+    // Beneficial owner risk factors (0-30 points)
     const hasPEP = beneficialOwners.some(bo => bo.pepStatus !== 'NOT_PEP');
     if (hasPEP) {
-      factors.push({ category: 'Beneficial Owners', description: 'PEP involvement detected', points: 20 });
-      totalScore += 20;
+      factors.push({ category: 'Beneficial Owners', description: 'PEP involvement detected', points: 18 });
+      totalScore += 18;
     }
 
     const hasNominee = beneficialOwners.some(bo => bo.isNominee);
     if (hasNominee) {
-      factors.push({ category: 'Beneficial Owners', description: 'Nominee arrangements present', points: 15 });
-      totalScore += 15;
+      factors.push({ category: 'Beneficial Owners', description: 'Nominee arrangements present', points: 12 });
+      totalScore += 12;
     }
 
-    // Product risk factors
-    const selectedProducts = products.filter(p => p.selected);
-    const productRisk = selectedProducts.reduce((sum, p) => sum + p.riskWeight, 0);
-    if (productRisk > 30) {
-      factors.push({ category: 'Products', description: 'High-risk products selected', points: 15 });
-      totalScore += 15;
-    } else if (productRisk > 15) {
-      factors.push({ category: 'Products', description: 'Moderate-risk products selected', points: 8 });
-      totalScore += 8;
-    } else {
-      factors.push({ category: 'Products', description: 'Low-risk products selected', points: 3 });
-      totalScore += 3;
-    }
-
-    // Transaction value risk
-    if (anticipatedVolumes.monthlyTransactionValue > 1000000) {
-      factors.push({ category: 'Transaction Volume', description: 'High monthly value (>$1M NZD)', points: 15 });
-      totalScore += 15;
-    } else if (anticipatedVolumes.monthlyTransactionValue > 500000) {
-      factors.push({ category: 'Transaction Volume', description: 'Elevated monthly value ($500K-$1M NZD)', points: 10 });
-      totalScore += 10;
-    } else {
-      factors.push({ category: 'Transaction Volume', description: 'Standard monthly value', points: 5 });
-      totalScore += 5;
-    }
-
-    // International transactions
-    if (anticipatedVolumes.internationalTransactions) {
-      factors.push({ category: 'Geographic', description: 'International transactions expected', points: 10 });
-      totalScore += 10;
-    }
-
-    // Determine rating
+    // Determine rating (adjusted thresholds)
     let rating: RiskRating = 'LOW';
-    if (totalScore >= 70) {
+    if (totalScore >= 61) {
       rating = 'HIGH';
-    } else if (totalScore >= 40) {
+    } else if (totalScore >= 36) {
       rating = 'MEDIUM';
     }
 
@@ -433,10 +375,10 @@ const NewApplicationPage = () => {
 
   // Run risk calculation when relevant data changes
   useEffect(() => {
-    if (activeStep >= 6 && selectedEntity) {
+    if (activeStep >= 4 && selectedEntity) {
       calculateRiskAssessment();
     }
-  }, [activeStep, beneficialOwners, products, anticipatedVolumes]);
+  }, [activeStep, beneficialOwners, selectedEntity]);
 
   const handleNext = () => {
     setActiveStep((prev) => prev + 1);
@@ -584,14 +526,8 @@ const NewApplicationPage = () => {
       if (appResponse.data.success) {
         const appId = appResponse.data.data.id;
 
-        // Update with additional data
+        // Update with risk assessment data
         await applicationsApi.update(appId, {
-          naturePurposeRelationship: naturePurpose.relationshipPurpose,
-          sourceOfFunds: naturePurpose.sourceOfFunds,
-          sourceOfWealth: naturePurpose.sourceOfWealth,
-          productsRequested: products.filter(p => p.selected).map(p => p.code),
-          anticipatedMonthlyVolume: anticipatedVolumes.monthlyTransactionCount,
-          anticipatedMonthlyValue: anticipatedVolumes.monthlyTransactionValue,
           riskRating: riskAssessment?.rating,
           riskScore: riskAssessment?.score,
         });
@@ -612,7 +548,7 @@ const NewApplicationPage = () => {
   const renderStep0_EntityIdentification = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 1 of 9: Entity Identification
+        Step 1 of 7: Entity Identification
       </Typography>
 
       {!entityLocation && (
@@ -814,7 +750,7 @@ const NewApplicationPage = () => {
   const renderStep1_CDDDetermination = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 2 of 9: CDD Level Determination
+        Step 2 of 7: CDD Level Determination
       </Typography>
 
       {selectedEntity && (
@@ -904,7 +840,7 @@ const NewApplicationPage = () => {
   const renderStep2_BeneficialOwnership = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 3 of 9: Beneficial Ownership
+        Step 3 of 7: Beneficial Ownership
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -1168,7 +1104,7 @@ const NewApplicationPage = () => {
   const renderStep3_PersonsActing = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 4 of 9: Persons Acting on Behalf
+        Step 4 of 7: Persons Acting on Behalf
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -1364,282 +1300,11 @@ const NewApplicationPage = () => {
     </Box>
   );
 
-  // Render Step 4: Nature & Purpose
-  const renderStep4_NaturePurpose = () => (
+  // Render Step 4: Risk Assessment
+  const renderStep4_RiskAssessment = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 5 of 9: Nature & Purpose of Business Relationship
-      </Typography>
-
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <Typography variant="body2">
-          <strong>Section 16, AML/CFT Act 2009:</strong> You must obtain information on the nature and purpose of
-          the proposed business relationship.
-        </Typography>
-      </Alert>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Purpose of Business Relationship"
-              value={naturePurpose.relationshipPurpose}
-              onChange={(e) => setNaturePurpose({ ...naturePurpose, relationshipPurpose: e.target.value })}
-              placeholder="Describe why the customer requires banking services..."
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              fullWidth
-              multiline
-              rows={2}
-              label="Primary Business Activity"
-              value={naturePurpose.primaryBusinessActivity}
-              onChange={(e) => setNaturePurpose({ ...naturePurpose, primaryBusinessActivity: e.target.value })}
-              placeholder="Describe the customer's main business activities..."
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Expected Transaction Types
-            </Typography>
-            <FormGroup row>
-              {['Domestic Payments', 'International Payments', 'Cash Deposits', 'Cash Withdrawals', 'Direct Debits', 'Payroll'].map((type) => (
-                <FormControlLabel
-                  key={type}
-                  control={
-                    <Checkbox
-                      checked={naturePurpose.expectedTransactionTypes.includes(type)}
-                      onChange={(e) => {
-                        const types = e.target.checked
-                          ? [...naturePurpose.expectedTransactionTypes, type]
-                          : naturePurpose.expectedTransactionTypes.filter(t => t !== type);
-                        setNaturePurpose({ ...naturePurpose, expectedTransactionTypes: types });
-                      }}
-                    />
-                  }
-                  label={type}
-                />
-              ))}
-            </FormGroup>
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <Typography variant="subtitle2" gutterBottom>
-              Geographic Focus
-            </Typography>
-            <FormGroup row>
-              {['New Zealand', 'Australia', 'Asia Pacific', 'Europe', 'North America', 'Other'].map((region) => (
-                <FormControlLabel
-                  key={region}
-                  control={
-                    <Checkbox
-                      checked={naturePurpose.geographicFocus.includes(region)}
-                      onChange={(e) => {
-                        const regions = e.target.checked
-                          ? [...naturePurpose.geographicFocus, region]
-                          : naturePurpose.geographicFocus.filter(r => r !== region);
-                        setNaturePurpose({ ...naturePurpose, geographicFocus: regions });
-                      }}
-                    />
-                  }
-                  label={region}
-                />
-              ))}
-            </FormGroup>
-          </Grid>
-
-          {cddDetermination?.level === 'ENHANCED' && (
-            <>
-              <Grid size={{ xs: 12 }}>
-                <Divider />
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2, mb: 1 }}>
-                  Enhanced CDD Requirements
-                </Typography>
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                  Source of Wealth and Source of Funds information is required for Enhanced CDD applications.
-                </Alert>
-              </Grid>
-
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Source of Wealth"
-                  value={naturePurpose.sourceOfWealth}
-                  onChange={(e) => setNaturePurpose({ ...naturePurpose, sourceOfWealth: e.target.value })}
-                  placeholder="Describe the origin of the customer's overall wealth (e.g., business profits, inheritance, investments)..."
-                  required
-                />
-              </Grid>
-
-              <Grid size={{ xs: 12 }}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Source of Funds"
-                  value={naturePurpose.sourceOfFunds}
-                  onChange={(e) => setNaturePurpose({ ...naturePurpose, sourceOfFunds: e.target.value })}
-                  placeholder="Describe the origin of the specific funds for transactions (e.g., business revenue, loan proceeds)..."
-                  required
-                />
-              </Grid>
-            </>
-          )}
-        </Grid>
-      </Paper>
-    </Box>
-  );
-
-  // Render Step 5: Products & Volumes
-  const renderStep5_ProductsVolumes = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Step 6 of 9: Products & Expected Transaction Volumes
-      </Typography>
-
-      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Products Requested
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Select the banking products the customer requires:
-        </Typography>
-
-        <Grid container spacing={2}>
-          {products.map((product, index) => (
-            <Grid size={{ xs: 12, md: 6 }} key={product.code}>
-              <Paper
-                variant="outlined"
-                sx={{
-                  p: 2,
-                  cursor: 'pointer',
-                  bgcolor: product.selected ? 'primary.light' : 'transparent',
-                  borderColor: product.selected ? 'primary.main' : 'divider',
-                  '&:hover': { borderColor: 'primary.main' },
-                }}
-                onClick={() => {
-                  const updated = [...products];
-                  updated[index].selected = !updated[index].selected;
-                  setProducts(updated);
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Box>
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {product.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {product.description}
-                    </Typography>
-                  </Box>
-                  <Checkbox checked={product.selected} />
-                </Box>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Paper>
-
-      <Paper variant="outlined" sx={{ p: 3 }}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Anticipated Transaction Volumes
-        </Typography>
-
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="body2" gutterBottom>
-              Monthly Transaction Count: {anticipatedVolumes.monthlyTransactionCount.toLocaleString()}
-            </Typography>
-            <Slider
-              value={anticipatedVolumes.monthlyTransactionCount}
-              onChange={(_, value) => setAnticipatedVolumes({ ...anticipatedVolumes, monthlyTransactionCount: value as number })}
-              min={0}
-              max={10000}
-              step={100}
-              marks={[
-                { value: 0, label: '0' },
-                { value: 2500, label: '2.5K' },
-                { value: 5000, label: '5K' },
-                { value: 7500, label: '7.5K' },
-                { value: 10000, label: '10K' },
-              ]}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Typography variant="body2" gutterBottom>
-              Monthly Transaction Value: ${anticipatedVolumes.monthlyTransactionValue.toLocaleString()} NZD
-            </Typography>
-            <Slider
-              value={anticipatedVolumes.monthlyTransactionValue}
-              onChange={(_, value) => setAnticipatedVolumes({ ...anticipatedVolumes, monthlyTransactionValue: value as number })}
-              min={0}
-              max={5000000}
-              step={50000}
-              marks={[
-                { value: 0, label: '$0' },
-                { value: 1000000, label: '$1M' },
-                { value: 2500000, label: '$2.5M' },
-                { value: 5000000, label: '$5M' },
-              ]}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField
-              fullWidth
-              label="Largest Single Transaction (NZD)"
-              type="number"
-              value={anticipatedVolumes.largestSingleTransaction}
-              onChange={(e) => setAnticipatedVolumes({ ...anticipatedVolumes, largestSingleTransaction: Number(e.target.value) })}
-            />
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={anticipatedVolumes.internationalTransactions}
-                  onChange={(e) => setAnticipatedVolumes({ ...anticipatedVolumes, internationalTransactions: e.target.checked })}
-                />
-              }
-              label="Customer expects to make international transactions"
-            />
-          </Grid>
-
-          {anticipatedVolumes.internationalTransactions && (
-            <Grid size={{ xs: 12 }}>
-              <TextField
-                fullWidth
-                label="Countries for International Transactions"
-                placeholder="e.g., Australia, United States, United Kingdom"
-                value={anticipatedVolumes.internationalCountries.join(', ')}
-                onChange={(e) => setAnticipatedVolumes({
-                  ...anticipatedVolumes,
-                  internationalCountries: e.target.value.split(',').map(c => c.trim()).filter(c => c)
-                })}
-                helperText="Separate countries with commas"
-              />
-            </Grid>
-          )}
-        </Grid>
-      </Paper>
-    </Box>
-  );
-
-  // Render Step 6: Risk Assessment
-  const renderStep6_RiskAssessment = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Step 7 of 9: Risk Assessment
+        Step 5 of 7: Risk Assessment
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -1726,11 +1391,11 @@ const NewApplicationPage = () => {
     </Box>
   );
 
-  // Render Step 7: Documents
-  const renderStep7_Documents = () => (
+  // Render Step 5: Documents
+  const renderStep5_Documents = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 8 of 9: Document Upload
+        Step 6 of 7: Document Upload
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -1847,11 +1512,11 @@ const NewApplicationPage = () => {
     </Box>
   );
 
-  // Render Step 8: Review & Submit
-  const renderStep8_Review = () => (
+  // Render Step 6: Review & Submit
+  const renderStep6_Review = () => (
     <Box>
       <Typography variant="h6" gutterBottom>
-        Step 9 of 9: Review & Submit
+        Step 7 of 7: Review & Submit
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
@@ -1972,39 +1637,6 @@ const NewApplicationPage = () => {
         </AccordionDetails>
       </Accordion>
 
-      {/* Products */}
-      <Accordion defaultExpanded>
-        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccountBalanceIcon color="primary" />
-            <Typography fontWeight={600}>Products & Volumes</Typography>
-          </Box>
-        </AccordionSummary>
-        <AccordionDetails>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }}>
-              <Typography variant="body2" color="text.secondary">Products Selected</Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-                {products.filter(p => p.selected).map(p => (
-                  <Chip key={p.code} label={p.name} size="small" />
-                ))}
-                {products.filter(p => p.selected).length === 0 && (
-                  <Typography variant="body2" color="text.secondary">No products selected</Typography>
-                )}
-              </Box>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="body2" color="text.secondary">Monthly Transaction Count</Typography>
-              <Typography variant="body1">{anticipatedVolumes.monthlyTransactionCount.toLocaleString()}</Typography>
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Typography variant="body2" color="text.secondary">Monthly Transaction Value</Typography>
-              <Typography variant="body1">${anticipatedVolumes.monthlyTransactionValue.toLocaleString()} NZD</Typography>
-            </Grid>
-          </Grid>
-        </AccordionDetails>
-      </Accordion>
-
       {/* Documents */}
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -2060,12 +1692,6 @@ const NewApplicationPage = () => {
           </ListItem>
           <ListItem>
             <ListItemIcon>
-              {naturePurpose.relationshipPurpose ? <CheckIcon color="success" /> : <WarningIcon color="warning" />}
-            </ListItemIcon>
-            <ListItemText primary="Nature and purpose (Section 16)" />
-          </ListItem>
-          <ListItem>
-            <ListItemIcon>
               {riskAssessment ? <CheckIcon color="success" /> : <CancelIcon color="error" />}
             </ListItemIcon>
             <ListItemText primary="Risk assessment (Section 58)" />
@@ -2086,15 +1712,11 @@ const NewApplicationPage = () => {
       case 3:
         return renderStep3_PersonsActing();
       case 4:
-        return renderStep4_NaturePurpose();
+        return renderStep4_RiskAssessment();
       case 5:
-        return renderStep5_ProductsVolumes();
+        return renderStep5_Documents();
       case 6:
-        return renderStep6_RiskAssessment();
-      case 7:
-        return renderStep7_Documents();
-      case 8:
-        return renderStep8_Review();
+        return renderStep6_Review();
       default:
         return null;
     }

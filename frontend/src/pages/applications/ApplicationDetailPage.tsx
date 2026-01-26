@@ -46,8 +46,6 @@ import {
   Edit as EditIcon,
   Send as SubmitIcon,
   VerifiedUser as VerifiedUserIcon,
-  AccountBalance as AccountBalanceIcon,
-  AttachMoney as MoneyIcon,
   Public as PublicIcon,
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
@@ -549,60 +547,6 @@ const ApplicationDetailPage = () => {
             </AccordionDetails>
           </Accordion>
 
-          {/* Nature & Purpose */}
-          <Accordion defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AccountBalanceIcon color="primary" />
-                <Typography fontWeight={600}>Nature & Purpose</Typography>
-              </Box>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12 }}>
-                  <Typography variant="body2" color="text.secondary">Purpose of Relationship</Typography>
-                  <Typography variant="body1">
-                    {application.naturePurposeRelationship || 'Not provided'}
-                  </Typography>
-                </Grid>
-                {application.productsRequested && application.productsRequested.length > 0 && (
-                  <Grid size={{ xs: 12 }}>
-                    <Typography variant="body2" color="text.secondary">Products Requested</Typography>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 0.5 }}>
-                      {application.productsRequested.map((product) => (
-                        <Chip key={product} label={product.replace(/_/g, ' ')} size="small" />
-                      ))}
-                    </Box>
-                  </Grid>
-                )}
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="body2" color="text.secondary">Monthly Transaction Volume</Typography>
-                  <Typography variant="body1">
-                    {application.anticipatedMonthlyVolume?.toLocaleString() || 0} transactions
-                  </Typography>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Typography variant="body2" color="text.secondary">Monthly Transaction Value</Typography>
-                  <Typography variant="body1">
-                    ${application.anticipatedMonthlyValue?.toLocaleString() || 0} NZD
-                  </Typography>
-                </Grid>
-                {application.sourceOfFunds && (
-                  <Grid size={{ xs: 12 }}>
-                    <Typography variant="body2" color="text.secondary">Source of Funds</Typography>
-                    <Typography variant="body1">{application.sourceOfFunds}</Typography>
-                  </Grid>
-                )}
-                {application.sourceOfWealth && (
-                  <Grid size={{ xs: 12 }}>
-                    <Typography variant="body2" color="text.secondary">Source of Wealth</Typography>
-                    <Typography variant="body1">{application.sourceOfWealth}</Typography>
-                  </Grid>
-                )}
-              </Grid>
-            </AccordionDetails>
-          </Accordion>
-
           {/* Documents */}
           <Accordion defaultExpanded>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -773,14 +717,6 @@ const ApplicationDetailPage = () => {
                       : <WarningIcon color="warning" />}
                   </ListItemIcon>
                   <ListItemText primary="Persons acting (S.11)" />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    {application.naturePurposeRelationship
-                      ? <CheckIcon color="success" />
-                      : <WarningIcon color="warning" />}
-                  </ListItemIcon>
-                  <ListItemText primary="Nature & purpose (S.16)" />
                 </ListItem>
                 <ListItem>
                   <ListItemIcon>

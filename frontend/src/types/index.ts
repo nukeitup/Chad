@@ -23,6 +23,8 @@ export interface Entity {
   overseasRegistrationNumber?: string;
   countryOfIncorporation: string;
   incorporationDate?: string;
+  anzsicCode?: string;
+  anzsicDescription?: string;
   entityStatus: EntityStatus;
   registeredStreet?: string;
   registeredCity?: string;
@@ -65,12 +67,6 @@ export interface CDDApplication {
   riskRating?: RiskRating;
   riskScore?: number;
   riskRatingJustification?: string;
-  naturePurposeRelationship?: string;
-  anticipatedMonthlyVolume?: number;
-  anticipatedMonthlyValue?: number;
-  productsRequested?: string[];
-  sourceOfFunds?: string;
-  sourceOfWealth?: string;
   assignedSpecialistId?: string;
   assignedSpecialist?: User;
   assignedApproverId?: string;

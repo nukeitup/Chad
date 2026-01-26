@@ -52,7 +52,7 @@ export interface CDDDetermination {
 }
 
 export interface RiskFactor {
-  category: 'entity' | 'geographic' | 'product' | 'transaction' | 'beneficialOwner';
+  category: 'entity' | 'geographic' | 'beneficialOwner';
   description: string;
   points: number;
 }
@@ -436,48 +436,49 @@ export const cddDeterminationService = {
   },
 
   /**
-   * Calculates overall risk rating based on multiple factors
+   * Calculates overall risk rating based on public data factors only
+   *
+   * Risk factors (rescaled after removing product/transaction factors):
+   * - Entity factors: 0-35 points
+   * - Geographic factors: 0-35 points
+   * - Beneficial owner factors: 0-30 points
+   * Total: 0-100 points
    */
   async calculateRiskRating(
     entity: Entity,
-    beneficialOwners: (BeneficialOwner & { person: Person })[],
-    products: string[],
-    relationship: {
-      anticipatedMonthlyVolume?: number;
-      anticipatedMonthlyValue?: number;
-    }
+    beneficialOwners: (BeneficialOwner & { person: Person })[]
   ): Promise<RiskRatingResult> {
     const factors: RiskFactor[] = [];
     let riskScore = 0;
 
     // ========================================
-    // Entity Risk Factors (0-30 points)
+    // Entity Risk Factors (0-35 points)
     // ========================================
 
-    // Entity type risk
+    // Entity type risk (rescaled from 0-15 to 0-20)
     if (entity.entityType === 'TRUST') {
-      factors.push({ category: 'entity', description: 'Entity type: Trust (higher risk)', points: 15 });
-      riskScore += 15;
+      factors.push({ category: 'entity', description: 'Entity type: Trust (higher risk)', points: 20 });
+      riskScore += 20;
     } else if (entity.entityType === 'FOUNDATION') {
-      factors.push({ category: 'entity', description: 'Entity type: Foundation', points: 10 });
-      riskScore += 10;
+      factors.push({ category: 'entity', description: 'Entity type: Foundation', points: 15 });
+      riskScore += 15;
     } else if (entity.entityType === 'NZ_LIMITED_PARTNERSHIP') {
-      factors.push({ category: 'entity', description: 'Entity type: Limited Partnership', points: 5 });
-      riskScore += 5;
+      factors.push({ category: 'entity', description: 'Entity type: Limited Partnership', points: 8 });
+      riskScore += 8;
     }
 
-    // Ownership complexity
+    // Ownership complexity (rescaled from 0-15 to 0-15)
     const ownershipLayers = this.calculateOwnershipLayers(beneficialOwners);
     if (ownershipLayers > 3) {
       factors.push({ category: 'entity', description: `Complex ownership: ${ownershipLayers} layers`, points: 15 });
       riskScore += 15;
     } else if (ownershipLayers > 1) {
-      factors.push({ category: 'entity', description: `Moderate ownership complexity: ${ownershipLayers} layers`, points: 5 });
-      riskScore += 5;
+      factors.push({ category: 'entity', description: `Moderate ownership complexity: ${ownershipLayers} layers`, points: 8 });
+      riskScore += 8;
     }
 
     // ========================================
-    // Geographic Risk Factors (0-30 points)
+    // Geographic Risk Factors (0-35 points)
     // ========================================
 
     const countryRisk = config.testMode
@@ -485,46 +486,18 @@ export const cddDeterminationService = {
       : { riskLevel: 'MEDIUM', isFATFHighRisk: false };
 
     if (countryRisk?.isFATFHighRisk) {
-      factors.push({ category: 'geographic', description: 'FATF high-risk jurisdiction (call for action)', points: 30 });
-      riskScore += 30;
+      factors.push({ category: 'geographic', description: 'FATF high-risk jurisdiction (call for action)', points: 35 });
+      riskScore += 35;
     } else if (countryRisk?.riskLevel === 'HIGH') {
-      factors.push({ category: 'geographic', description: 'High-risk jurisdiction', points: 20 });
-      riskScore += 20;
+      factors.push({ category: 'geographic', description: 'High-risk jurisdiction', points: 25 });
+      riskScore += 25;
     } else if (countryRisk?.riskLevel === 'MEDIUM') {
-      factors.push({ category: 'geographic', description: 'Medium-risk jurisdiction', points: 10 });
-      riskScore += 10;
+      factors.push({ category: 'geographic', description: 'Medium-risk jurisdiction', points: 12 });
+      riskScore += 12;
     }
 
     // ========================================
-    // Product Risk Factors (0-20 points)
-    // ========================================
-
-    const highRiskProducts = ['FOREIGN_EXCHANGE', 'TRADE_FINANCE', 'CORRESPONDENT_BANKING', 'PRIVATE_BANKING'];
-    const requestedHighRisk = products.filter(p => highRiskProducts.includes(p));
-
-    if (requestedHighRisk.length > 0) {
-      factors.push({ category: 'product', description: `High-risk products: ${requestedHighRisk.join(', ')}`, points: 10 });
-      riskScore += 10;
-    }
-
-    // ========================================
-    // Transaction Risk Factors (0-20 points)
-    // ========================================
-
-    const monthlyValue = relationship.anticipatedMonthlyValue || 0;
-    if (monthlyValue > 1000000) {
-      factors.push({ category: 'transaction', description: 'High anticipated values (>$1M NZD/month)', points: 15 });
-      riskScore += 15;
-    } else if (monthlyValue > 500000) {
-      factors.push({ category: 'transaction', description: 'Elevated transaction values ($500K-$1M NZD/month)', points: 10 });
-      riskScore += 10;
-    } else if (monthlyValue > 100000) {
-      factors.push({ category: 'transaction', description: 'Moderate transaction values ($100K-$500K NZD/month)', points: 5 });
-      riskScore += 5;
-    }
-
-    // ========================================
-    // Beneficial Owner Risk Factors (0-20 points)
+    // Beneficial Owner Risk Factors (0-30 points)
     // ========================================
 
     // Check for sanctions matches
@@ -542,38 +515,39 @@ export const cddDeterminationService = {
       };
     }
 
-    // Check for PEPs
+    // Check for PEPs (rescaled from 15 to 18)
     const hasPEP = beneficialOwners.some(bo => bo.person.pepStatus !== 'NOT_PEP');
     if (hasPEP) {
       const pepDetails = beneficialOwners
         .filter(bo => bo.person.pepStatus !== 'NOT_PEP')
         .map(bo => `${bo.person.fullName}: ${bo.person.pepStatus}`)
         .join(', ');
-      factors.push({ category: 'beneficialOwner', description: `PEP involvement: ${pepDetails}`, points: 15 });
-      riskScore += 15;
+      factors.push({ category: 'beneficialOwner', description: `PEP involvement: ${pepDetails}`, points: 18 });
+      riskScore += 18;
     }
 
-    // Check for adverse media
+    // Check for adverse media (rescaled from 10 to 12)
     const hasAdverseMedia = beneficialOwners.some(
       bo => bo.person.adverseMediaResult &&
             bo.person.adverseMediaResult !== 'Clear'
     );
     if (hasAdverseMedia) {
-      factors.push({ category: 'beneficialOwner', description: 'Adverse media matches found', points: 10 });
-      riskScore += 10;
+      factors.push({ category: 'beneficialOwner', description: 'Adverse media matches found', points: 12 });
+      riskScore += 12;
     }
 
     // ========================================
-    // Determine Rating
+    // Determine Rating (adjusted thresholds)
     // ========================================
 
     let rating: 'LOW' | 'MEDIUM' | 'HIGH' | 'PROHIBITED';
     let justification: string;
 
-    if (riskScore >= 70) {
+    // Adjusted thresholds: LOW 0-35, MEDIUM 36-60, HIGH 61+
+    if (riskScore >= 61) {
       rating = 'HIGH';
       justification = `High risk rating (score: ${riskScore}/100). Enhanced CDD and senior management approval required. Quarterly review trigger activated.`;
-    } else if (riskScore >= 40) {
+    } else if (riskScore >= 36) {
       rating = 'MEDIUM';
       justification = `Medium risk rating (score: ${riskScore}/100). Standard CDD procedures apply. Annual review trigger.`;
     } else {

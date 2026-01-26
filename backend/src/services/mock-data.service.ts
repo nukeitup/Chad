@@ -8,6 +8,7 @@
  */
 
 import { PEPStatus } from '../generated/prisma';
+import { TEST_OWNERSHIP_ENTITIES } from '../data/test-ownership-structures';
 
 // ============================================================
 // MOCK NZBN ENTITIES
@@ -22,6 +23,9 @@ export interface MockNZBNEntity {
   entityStatusCode: string;
   entityStatusDescription: string;
   registrationDate: string;
+  // ANZSIC Industry Classification
+  anzsicCode?: string;
+  anzsicDescription?: string;
   addresses: Array<{
     addressType: string;
     address1: string;
@@ -71,6 +75,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2018-03-15',
+    anzsicCode: 'F331',
+    anzsicDescription: 'Wholesaling - Grocery, Liquor and Tobacco Product',
     addresses: [
       {
         addressType: 'Registered Office',
@@ -120,6 +126,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '1998-07-01',
+    anzsicCode: 'D261',
+    anzsicDescription: 'Electricity Generation',
     isListedIssuer: true,
     listedExchange: 'NZX',
     addresses: [
@@ -158,6 +166,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2010-11-01',
+    anzsicCode: 'O753',
+    anzsicDescription: 'Local Government Administration',
     isLocalAuthority: true,
     addresses: [
       {
@@ -180,6 +190,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2008-07-01',
+    anzsicCode: 'I471',
+    anzsicDescription: 'Rail Freight Transport',
     isStateEnterprise: true,
     addresses: [
       {
@@ -204,6 +216,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2020-01-15',
+    anzsicCode: 'K624',
+    anzsicDescription: 'Financial Asset Investing',
     addresses: [
       {
         addressType: 'Registered Office',
@@ -240,6 +254,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2015-06-01',
+    anzsicCode: 'L672',
+    anzsicDescription: 'Non-Financial Asset Investing',
     addresses: [
       {
         addressType: 'Registered Office',
@@ -280,6 +296,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2019-09-01',
+    anzsicCode: 'K623',
+    anzsicDescription: 'Non-Depository Financing',
     addresses: [
       {
         addressType: 'Registered Office',
@@ -320,6 +338,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2021-03-01',
+    anzsicCode: 'M696',
+    anzsicDescription: 'Management Advice and Related Consulting Services',
     addresses: [
       {
         addressType: 'Registered Office',
@@ -345,6 +365,9 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
       },
     ],
   },
+
+  // Add test ownership structures for ownership tree testing
+  ...TEST_OWNERSHIP_ENTITIES,
 };
 
 // ============================================================

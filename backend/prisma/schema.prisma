@@ -137,6 +137,8 @@ model Entity {
   overseasRegistrationNumber String?
   countryOfIncorporation    String       @default("NZ")
   incorporationDate         DateTime?
+  anzsicCode                String?
+  anzsicDescription         String?
   entityStatus              EntityStatus @default(ACTIVE)
 
   // Registered Address
@@ -184,14 +186,6 @@ model CDDApplication {
   riskScore               Int?
   riskRatingJustification String?
 
-  // Nature & Purpose
-  naturePurposeRelationship String?
-  anticipatedMonthlyVolume  Int?
-  anticipatedMonthlyValue   Decimal?       @db.Decimal(15, 2)
-  productsRequested        String[]
-  sourceOfFunds            String?
-  sourceOfWealth           String?
-
   // Workflow
   assignedSpecialistId    String?
   assignedApproverId      String?
@@ -202,7 +196,6 @@ model CDDApplication {
   returnedReason          String?
   rejectedDate            DateTime?
   rejectedReason          String?
-  coreBankingCustomerId   String?          @unique
 
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
@@ -368,6 +361,7 @@ model Document {
   beneficialOwner         BeneficialOwner?  @relation(fields: [beneficialOwnerId], references: [id])
   poaboc                  PersonActingOnBehalf? @relation(fields: [poabocId], references: [id])
   uploadedBy              User              @relation(fields: [uploadedById], references: [id])
+  extraction              DocumentExtraction?
 
   @@index([applicationId])
   @@index([documentCategory])
@@ -442,4 +436,35 @@ model Country {
 
   @@index([countryCode])
   @@index([riskLevel])
+}
+
+// Ownership Cache - Caches resolved ownership structures from Companies Office
+model OwnershipCache {
+  id                      String            @id @default(uuid())
+  nzbn                    String            @unique
+  ownershipData           Json              // Raw shareholder data from API
+  resolvedTree            Json?             // Fully resolved ownership tree
+  fetchedAt               DateTime          @default(now())
+  expiresAt               DateTime          // TTL: 30 days from fetchedAt
+
+  @@index([nzbn])
+  @@index([expiresAt])
+}
+
+// Document Extraction - Stores parsed data from uploaded documents
+model DocumentExtraction {
+  id                      String            @id @default(uuid())
+  documentId              String            @unique
+  extractedData           Json              // ExtractionResult from parser
+  status                  String            @default("pending") // pending, completed, confirmed, failed
+  confirmedData           Json?             // User-confirmed extracted data
+  confirmedBy             String?
+  confirmedAt             DateTime?
+  createdAt               DateTime          @default(now())
+
+  // Relationships
+  document                Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([status])
 }

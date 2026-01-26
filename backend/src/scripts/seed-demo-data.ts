@@ -264,11 +264,6 @@ async function seedDemoData() {
         cddLevelJustification: 'Entity does not meet Simplified CDD criteria',
         workflowState: 'DRAFT',
         assignedSpecialistId: specialist!.id,
-        naturePurposeRelationship: 'Business transaction account for import/export trading',
-        anticipatedMonthlyVolume: 50,
-        anticipatedMonthlyValue: 250000,
-        productsRequested: ['TRANSACTION_ACCOUNT', 'FOREIGN_EXCHANGE'],
-        sourceOfFunds: 'Business revenue from trading activities',
       },
     });
 
@@ -309,10 +304,6 @@ async function seedDemoData() {
         submittedDate: new Date(),
         assignedSpecialistId: specialist!.id,
         assignedApproverId: manager!.id,
-        naturePurposeRelationship: 'Treasury operations - cash management',
-        anticipatedMonthlyVolume: 100,
-        anticipatedMonthlyValue: 5000000,
-        productsRequested: ['TRANSACTION_ACCOUNT', 'TERM_DEPOSIT'],
         riskRating: 'LOW',
         riskScore: 10,
         riskRatingJustification: 'Low risk - NZX listed entity with transparent ownership',
@@ -331,15 +322,9 @@ async function seedDemoData() {
         submittedDate: new Date(Date.now() - 86400000), // Yesterday
         assignedSpecialistId: specialist!.id,
         assignedApproverId: manager!.id,
-        naturePurposeRelationship: 'Investment holding company - NZ property investments',
-        anticipatedMonthlyVolume: 10,
-        anticipatedMonthlyValue: 1500000,
-        productsRequested: ['TRANSACTION_ACCOUNT', 'TERM_DEPOSIT', 'FOREIGN_EXCHANGE'],
-        sourceOfFunds: 'Returns from international investment portfolio',
-        sourceOfWealth: 'Family wealth accumulated over three generations from shipping and logistics business in Asia',
         riskRating: 'HIGH',
         riskScore: 75,
-        riskRatingJustification: 'High risk due to: offshore jurisdiction, complex ownership, high transaction values',
+        riskRatingJustification: 'High risk due to: offshore jurisdiction, complex ownership',
       },
     });
 
@@ -372,13 +357,9 @@ async function seedDemoData() {
         workflowState: 'RETURNED',
         submittedDate: new Date(Date.now() - 172800000), // 2 days ago
         returnedDate: new Date(Date.now() - 86400000), // Yesterday
-        returnedReason: 'Additional Source of Wealth documentation required for PEP. Please provide evidence of income sources for David Mitchell.',
+        returnedReason: 'Additional documentation required for PEP beneficial owner verification.',
         assignedSpecialistId: specialist!.id,
         assignedApproverId: manager!.id,
-        naturePurposeRelationship: 'Consulting services - government relations advisory',
-        anticipatedMonthlyVolume: 20,
-        anticipatedMonthlyValue: 100000,
-        productsRequested: ['TRANSACTION_ACCOUNT'],
         riskRating: 'HIGH',
         riskScore: 65,
         riskRatingJustification: 'High risk due to PEP involvement requiring enhanced monitoring',

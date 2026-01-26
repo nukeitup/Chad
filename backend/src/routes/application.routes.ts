@@ -7,8 +7,8 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import { AuthenticatedRequest } from '../types';
 import { WorkflowState, CDDLevel, RiskRating } from '../generated/prisma';
 import { auditService } from '../services/audit.service';
-import { coreBankingService } from '../services/core-banking.service';
 import { generateChecklist } from '../controllers/compliance.controller';
+import { nzbnImportService } from '../services/nzbn-import.service';
 
 const router = Router();
 
@@ -21,15 +21,10 @@ const createApplicationSchema = z.object({
 });
 
 const updateApplicationSchema = z.object({
-  naturePurposeRelationship: z.string().optional(),
-  anticipatedMonthlyVolume: z.number().int().positive().optional(),
-  anticipatedMonthlyValue: z.number().positive().optional(),
-  productsRequested: z.array(z.string()).optional(),
-  sourceOfFunds: z.string().optional(),
-  sourceOfWealth: z.string().optional(),
   riskRating: z.enum(['LOW', 'MEDIUM', 'HIGH', 'PROHIBITED']).optional(),
   riskScore: z.number().int().min(0).max(100).optional(),
   riskRatingJustification: z.string().optional(),
+  cddLevelJustification: z.string().optional(),
 });
 
 const returnApplicationSchema = z.object({
@@ -300,12 +295,7 @@ router.put(
 
     const updated = await prisma.cDDApplication.update({
       where: { id },
-      data: {
-        ...data,
-        anticipatedMonthlyValue: data.anticipatedMonthlyValue
-          ? data.anticipatedMonthlyValue
-          : undefined,
-      },
+      data,
       include: {
         entity: true,
       },
@@ -401,10 +391,6 @@ router.post(
     // Validate application completeness
     const errors: string[] = [];
 
-    if (!application.naturePurposeRelationship) {
-      errors.push('Nature and purpose of relationship is required');
-    }
-
     if (application.beneficialOwners.length === 0) {
       errors.push('At least one beneficial owner is required');
     }
@@ -477,16 +463,12 @@ router.post(
       throw new ApiError('Application cannot be approved in current state', 400);
     }
 
-    // Create customer in core banking system
-    const coreBankingCustomer = await coreBankingService.createCustomer(application);
-
     const updated = await prisma.cDDApplication.update({
       where: { id },
       data: {
         workflowState: 'APPROVED',
         approvedDate: new Date(),
         approvedById: req.user!.id,
-        coreBankingCustomerId: coreBankingCustomer.id,
       },
     });
 
@@ -684,6 +666,92 @@ router.get(
   authenticate,
   authorize('TEAM_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN'),
   generateChecklist
+);
+
+/**
+ * POST /api/v1/applications/:id/import-nzbn
+ * Import beneficial owners and persons acting on behalf from NZBN data
+ *
+ * Request body should contain:
+ * - shareholders: Array of shareholder data
+ * - directors: Array of director data
+ */
+const importNZBNSchema = z.object({
+  shareholders: z.array(z.object({
+    shareholderName: z.string(),
+    shareholderType: z.enum(['Individual', 'Company']),
+    numberOfShares: z.number(),
+    totalShares: z.number().optional(),
+    allocationDate: z.string(),
+  })).optional().default([]),
+  directors: z.array(z.object({
+    directorNumber: z.string(),
+    fullName: z.string(),
+    appointmentDate: z.string(),
+    residentialAddress: z.string().optional(),
+  })).optional().default([]),
+});
+
+router.post(
+  '/:id/import-nzbn',
+  authenticate,
+  authorize('SPECIALIST', 'TEAM_MANAGER', 'COMPLIANCE_OFFICER', 'ADMIN'),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const { id } = req.params;
+    const data = importNZBNSchema.parse(req.body);
+
+    // Fetch application with entity
+    const application = await prisma.cDDApplication.findUnique({
+      where: { id },
+      include: { entity: true },
+    });
+
+    if (!application) {
+      throw new ApiError('Application not found', 404);
+    }
+
+    if (!application.entityId) {
+      throw new ApiError('Application has no associated entity', 400);
+    }
+
+    if (application.workflowState !== 'DRAFT' && application.workflowState !== 'RETURNED') {
+      throw new ApiError('Can only import NZBN data for draft or returned applications', 400);
+    }
+
+    // Import data from NZBN
+    const result = await nzbnImportService.importAllFromNZBN(
+      id,
+      application.entityId,
+      data.shareholders,
+      data.directors
+    );
+
+    // Audit log
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'IMPORT_NZBN_DATA',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: id,
+      newValue: {
+        beneficialOwnersCreated: result.beneficialOwnersCreated,
+        personsActingCreated: result.personsActingCreated,
+        corporateShareholdersFound: result.corporateShareholdersFound,
+      },
+    });
+
+    res.json({
+      success: result.success,
+      data: {
+        beneficialOwnersCreated: result.beneficialOwnersCreated,
+        personsActingCreated: result.personsActingCreated,
+        corporateShareholdersFound: result.corporateShareholdersFound,
+        errors: result.errors,
+      },
+      message: result.success
+        ? `Imported ${result.beneficialOwnersCreated} beneficial owners and ${result.personsActingCreated} persons acting on behalf`
+        : 'Import completed with errors',
+    });
+  })
 );
 
 export default router;

@@ -18,6 +18,7 @@ import referenceRoutes from './routes/reference.routes';
 import userRoutes from './routes/user.routes';
 import nzbnRoutes from './routes/nzbn.routes';
 import cddRoutes from './routes/cdd.routes';
+import ownershipRoutes from './routes/ownership.routes';
 
 /**
  * Create and configure Express application
@@ -98,6 +99,7 @@ export function createApp(): Express {
   app.use('/api/v1/reference', referenceRoutes);
   app.use('/api/v1/users', userRoutes);
   app.use('/api/v1/nzbn', nzbnRoutes);
+  app.use('/api/v1', ownershipRoutes); // Ownership tree routes (applications/:id/ownership-tree, entities/:nzbn/shareholders)
 
   // Error handling
   app.use(notFoundHandler);
