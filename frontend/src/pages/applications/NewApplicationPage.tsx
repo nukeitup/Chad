@@ -590,7 +590,36 @@ const NewApplicationPage = () => {
 
   // Submit application
   const handleSubmitApplication = async () => {
-    if (!selectedEntity || !cddDetermination) return;
+    // Client-side validation before submission
+    if (!selectedEntity) {
+      setError('Please select or create an entity before submitting.');
+      return;
+    }
+    if (!cddDetermination) {
+      setError('CDD Level determination is missing.');
+      return;
+    }
+    if (beneficialOwners.length === 0) {
+      setError('At least one Beneficial Owner is required.');
+      return;
+    }
+    if (personsActing.length === 0) {
+      setError('At least one Person Acting on Behalf (Director) is required.');
+      return;
+    }
+    // Check if all required documents are uploaded (excluding Company Extract for NZ entities if automatically provided)
+    const missingDocs = requiredDocuments.filter(docType => {
+      if (docType === 'Company Extract' && selectedEntity?.countryOfIncorporation === 'NZ') {
+        return false; // Automatically provided for NZ entities
+      }
+      return !documents.some(d => d.documentType === docType && d.uploaded);
+    });
+
+    if (missingDocs.length > 0) {
+      setError(`Missing required documents: ${missingDocs.join(', ')}.`);
+      return;
+    }
+
 
     setIsSaving(true);
     setError(null);
@@ -1566,6 +1595,8 @@ const NewApplicationPage = () => {
         Step 7 of 7: Review & Submit
       </Typography>
 
+      {console.log('Selected Entity in Step 7:', selectedEntity)}
+
       <Alert severity="info" sx={{ mb: 3 }}>
         Review all information before submitting. Once submitted, the application will be sent for approval.
       </Alert>
@@ -1741,7 +1772,7 @@ const NewApplicationPage = () => {
             <ListItemIcon>
               {riskAssessment ? <CheckIcon color="success" /> : <CancelIcon color="error" />}
             </ListItemIcon>
-            <ListItemText primary="Risk assessment (Section 58)" />
+            <ListItemText primary="Risk assessed (Section 58)" />
           </ListItem>
         </List>
       </Paper>
