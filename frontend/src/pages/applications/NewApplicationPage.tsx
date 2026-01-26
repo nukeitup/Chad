@@ -270,9 +270,9 @@ const NewApplicationPage = () => {
       // First, get/create entity in our database
       const entityResponse = await api.get(`/entities/nzbn/${nzbn}`);
       if (entityResponse.data.success) {
-        setSelectedEntity(entityResponse.data.data);
-        console.log('Selected Entity after NZBN selection:', entityResponse.data.data);
-        await determineCDDLevel(entityResponse.data.data);
+        setSelectedEntity(entityResponse.data.data.entity);
+        console.log('Selected Entity after NZBN selection:', entityResponse.data.data.entity);
+        await determineCDDLevel(entityResponse.data.data.entity);
       }
 
       // Then, fetch full NZBN details including shareholders and directors
@@ -352,9 +352,9 @@ const NewApplicationPage = () => {
     try {
       const response = await api.post('/entities/overseas', overseasEntity);
       if (response.data.success) {
-        setSelectedEntity(response.data.data);
-        console.log('Selected Entity after Overseas creation:', response.data.data);
-        await determineCDDLevel(response.data.data);
+        setSelectedEntity(response.data.data.entity);
+        console.log('Selected Entity after Overseas creation:', response.data.data.entity);
+        await determineCDDLevel(response.data.data.entity);
         setActiveStep(1);
       }
     } catch (err: any) {

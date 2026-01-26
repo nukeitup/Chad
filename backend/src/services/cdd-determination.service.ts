@@ -443,9 +443,8 @@ export const cddDeterminationService = {
       // In test mode, make specific documents non-mandatory
       const nonMandatoryInTestMode = [
         'Certificate of Incorporation',
-        'Company Constitution', // From error message, likely maps to 'Company Constitution/Trust Deed'
-        'Register of Directors', // From error message, likely maps to 'Register of Directors and Shareholders'
-        'Register of Shareholders', // From error message, likely maps to 'Register of Directors and Shareholders'
+        'Company Constitution/Trust Deed', // Corrected name
+        'Register of Directors and Shareholders', // Corrected name
         'Board Resolution',
         'Company Extract',
       ];
