@@ -116,111 +116,97 @@ router.get(
       throw new ApiError('Invalid NZBN format. Must be 13 digits.', 400);
     }
 
-    // Check if entity already exists in our database
-    const existingEntity = await prisma.entity.findUnique({
-      where: { nzbn },
-    });
+    let externalEntityData: any; // Data from NZBN API or mock service
 
-    if (existingEntity) {
-      res.json({
-        success: true,
-        data: {
-          entity: existingEntity,
-          source: 'database',
-        },
-      });
-      return;
-    }
-
-    // In test mode, use comprehensive mock data service
     if (config.testMode) {
-      const mockEntity = mockDataService.getEntityByNZBN(nzbn);
+      // In test mode, use comprehensive mock data service
+      let mockEntity = mockDataService.getEntityByNZBN(nzbn);
 
       if (!mockEntity) {
         // Return a generic mock for unknown NZBNs in test mode
-        res.json({
-          success: true,
-          data: {
-            entity: {
-              nzbn,
-              entityName: `TEST COMPANY ${nzbn.slice(-4)}`,
-              entityTypeCode: 'LTD',
-              entityTypeName: 'NZ Limited Company',
-              entityStatusCode: 'REGD',
-              entityStatusDescription: 'Registered',
-              registrationDate: '2020-01-01',
-              addresses: [
-                {
-                  addressType: 'Registered Office',
-                  address1: '1 Test Street',
-                  postCode: '1010',
-                  countryCode: 'NZ',
-                },
-              ],
-              directors: [
-                {
-                  directorNumber: 'D001',
-                  fullName: 'Test Director',
-                  appointmentDate: '2020-01-01',
-                },
-              ],
-              shareholders: [
-                {
-                  shareholderName: 'Test Director',
-                  shareholderType: 'Individual',
-                  numberOfShares: 100,
-                  totalShares: 100,
-                  allocationDate: '2020-01-01',
-                },
-              ],
-            },
-            source: 'nzbn_api',
+        mockEntity = {
+          nzbn,
+          legalName: `TEST COMPANY ${nzbn.slice(-4)}`,
+          entityType: 'NZ_COMPANY', // Default type for generic mock
+          countryOfIncorporation: 'NZ',
+          incorporationDate: '2020-01-01',
+          entityStatus: 'ACTIVE', // Default status
+          isListedIssuer: false,
+          // Add other required fields for createEntitySchema or set as null/undefined
+        };
+      }
+      externalEntityData = mockEntity;
+    } else {
+      // Production: Call actual NZBN API
+      try {
+        const response = await fetch(`${config.nzbn.apiUrl}/entities/${nzbn}`, {
+          headers: {
+            'Ocp-Apim-Subscription-Key': config.nzbn.apiKey,
           },
-          message: 'Test mode: NZBN not found in mock database, returning generic test entity',
         });
-        return;
-      }
 
-      res.json({
-        success: true,
-        data: {
-          entity: mockEntity,
-          source: 'nzbn_api',
-        },
-        message: `Test mode: Using mock NZBN data for ${mockEntity.entityName}`,
-      });
-      return;
+        if (response.status === 404) {
+          throw new ApiError('Entity not found in NZBN registry', 404);
+        }
+
+        if (!response.ok) {
+          throw new ApiError('NZBN API error', 502);
+        }
+
+        const data = await response.json();
+        externalEntityData = data;
+      } catch (error) {
+        if (error instanceof ApiError) throw error;
+        throw new ApiError('Failed to fetch from NZBN registry', 502);
+      }
     }
 
-    // Production: Call actual NZBN API
-    try {
-      const response = await fetch(`${config.nzbn.apiUrl}/entities/${nzbn}`, {
-        headers: {
-          'Ocp-Apim-Subscription-Key': config.nzbn.apiKey,
-        },
-      });
+    // Map external data to our internal Prisma Entity schema and create/update in DB
+    const entityToSave = {
+      legalName: externalEntityData.entityName || externalEntityData.legalName,
+      entityType: externalEntityData.entityType || 'NZ_COMPANY', // Default if not provided
+      nzbn: externalEntityData.nzbn,
+      tradingName: externalEntityData.tradingName || null,
+      companyNumber: externalEntityData.companyNumber || externalEntityData.nzbn, // Use NZBN as companyNumber if not distinct
+      countryOfIncorporation: externalEntityData.countryOfIncorporation || 'NZ',
+      incorporationDate: externalEntityData.registrationDate ? new Date(externalEntityData.registrationDate) : null,
+      entityStatus: externalEntityData.entityStatus || 'ACTIVE',
+      isListedIssuer: externalEntityData.isListedIssuer || false,
+      listedExchange: externalEntityData.listedExchange || null,
+      // Default addresses to null if not present in external data
+      registeredStreet: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.address1 || null,
+      registeredCity: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.city || null,
+      registeredPostcode: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.postCode || null,
+      registeredCountry: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.countryCode || null,
+      businessStreet: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.address1 || null,
+      businessCity: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.city || null,
+      businessPostcode: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.postCode || null,
+      businessCountry: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.countryCode || null,
+    };
 
-      if (response.status === 404) {
-        throw new ApiError('Entity not found in NZBN registry', 404);
-      }
-
-      if (!response.ok) {
-        throw new ApiError('NZBN API error', 502);
-      }
-
-      const data = await response.json();
-
-      res.json({
-        success: true,
-        data: {
-          entity: data,
-          source: 'nzbn_api',
-        },
-      });
-    } catch (error) {
-      if (error instanceof ApiError) throw error;
-      throw new ApiError('Failed to fetch from NZBN registry', 502);
+    // Ensure entityType is a valid enum member for Prisma
+    if (!['NZ_COMPANY', 'NZ_LIMITED_PARTNERSHIP', 'NZ_LOCAL_AUTHORITY', 'NZ_STATE_ENTERPRISE', 'NZ_PUBLIC_SERVICE_AGENCY', 'NZ_GOVT_DEPARTMENT', 'NZ_LISTED_ISSUER', 'OVERSEAS_COMPANY', 'TRUST', 'FOUNDATION'].includes(entityToSave.entityType)) {
+      entityToSave.entityType = 'NZ_COMPANY'; // Default to a valid type if conversion fails
     }
+    if (!['ACTIVE', 'INACTIVE', 'STRUCK_OFF', 'LIQUIDATION'].includes(entityToSave.entityStatus)) {
+      entityToSave.entityStatus = 'ACTIVE'; // Default to a valid status if conversion fails
+    }
+
+
+    const createdOrUpdatedEntity = await prisma.entity.upsert({
+      where: { nzbn: nzbn },
+      update: entityToSave,
+      create: entityToSave,
+    });
+
+    res.json({
+      success: true,
+      data: {
+        entity: createdOrUpdatedEntity, // This entity will always have an 'id'
+        source: config.testMode ? 'mock_data' : 'nzbn_api_to_db',
+      },
+      message: 'Entity retrieved and stored/updated in database',
+    });
   })
 );
 
