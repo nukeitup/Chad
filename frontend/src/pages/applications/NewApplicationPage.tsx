@@ -650,7 +650,7 @@ const NewApplicationPage = () => {
       });
 
       if (appResponse.data.success) {
-        const appId = appResponse.data.data.id;
+        const appId = appResponse.data.data.application.id;
 
         // Update with risk assessment data
         await applicationsApi.update(appId, {
