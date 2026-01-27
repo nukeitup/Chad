@@ -64,6 +64,26 @@ export function createApp(): Express {
     app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
   }
 
+  // Root route - API info
+  app.get('/', (_req: Request, res: Response) => {
+    res.json({
+      name: 'AML/CFT Compliance API',
+      version: '1.0.0',
+      status: 'running',
+      environment: config.nodeEnv,
+      testMode: config.testMode,
+      endpoints: {
+        health: '/health',
+        api: '/api/v1',
+        auth: '/api/v1/auth',
+        applications: '/api/v1/applications',
+        entities: '/api/v1/entities',
+        nzbn: '/api/v1/nzbn',
+      },
+      documentation: 'See CLAUDE.md for full API documentation',
+    });
+  });
+
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
     res.json({
