@@ -74,6 +74,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityName: 'MERIDIAN ENERGY LIMITED',
     entityTypeCode: 'LTD',
     entityTypeName: 'NZ Limited Company',
+    entityType: 'NZ_LISTED_ISSUER', // Explicit entity type for Simplified CDD
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '1998-07-01',
@@ -96,6 +97,11 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         fullName: 'Mark Cairns',
         appointmentDate: '2020-01-15',
       },
+      {
+        directorNumber: 'D002',
+        fullName: 'Jan Dawson',
+        appointmentDate: '2019-08-01',
+      },
     ],
     shareholders: [
       {
@@ -114,6 +120,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityName: 'AUCKLAND COUNCIL',
     entityTypeCode: 'LA',
     entityTypeName: 'Local Authority',
+    entityType: 'NZ_LOCAL_AUTHORITY', // Explicit entity type for Simplified CDD
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2010-11-01',
@@ -128,7 +135,13 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         countryCode: 'NZ',
       },
     ],
-    directors: [],
+    directors: [
+      {
+        directorNumber: 'D001',
+        fullName: 'Wayne Brown',
+        appointmentDate: '2022-10-01',
+      },
+    ],
     shareholders: [],
   },
 
@@ -138,6 +151,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityName: 'KIWIRAIL HOLDINGS LIMITED',
     entityTypeCode: 'SOE',
     entityTypeName: 'State Owned Enterprise',
+    entityType: 'NZ_STATE_ENTERPRISE', // Explicit entity type for Simplified CDD
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2008-07-01',
@@ -153,8 +167,27 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         countryCode: 'NZ',
       },
     ],
-    directors: [],
-    shareholders: [],
+    directors: [
+      {
+        directorNumber: 'D001',
+        fullName: 'David McLean',
+        appointmentDate: '2020-03-01',
+      },
+      {
+        directorNumber: 'D002',
+        fullName: 'Sue McCormack',
+        appointmentDate: '2019-06-15',
+      },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'NZ Government (Crown)',
+        shareholderType: 'Company',
+        numberOfShares: 100,
+        totalShares: 100,
+        allocationDate: '2008-07-01',
+      },
+    ],
   },
 
   // Enhanced CDD - Complex Ownership (multiple layers)

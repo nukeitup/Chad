@@ -393,12 +393,16 @@ router.post(
     // Validate application completeness
     const errors: string[] = [];
 
-    if (application.beneficialOwners.length === 0) {
-      errors.push('At least one beneficial owner is required');
-    }
+    // For Standard and Enhanced CDD, require beneficial owners and directors
+    // For Simplified CDD, these requirements are relaxed per Section 18, AML/CFT Act 2009
+    if (application.cddLevel !== 'SIMPLIFIED') {
+      if (application.beneficialOwners.length === 0) {
+        errors.push('At least one beneficial owner is required');
+      }
 
-    if (application.personsActingOnBehalf.length === 0) {
-      errors.push('At least one person acting on behalf is required');
+      if (application.personsActingOnBehalf.length === 0) {
+        errors.push('At least one person acting on behalf is required');
+      }
     }
 
     if (!application.riskRating) {

@@ -612,13 +612,17 @@ const NewApplicationPage = () => {
       setError('CDD Level determination is missing.');
       return;
     }
-    if (beneficialOwners.length === 0) {
-      setError('At least one Beneficial Owner is required.');
-      return;
-    }
-    if (personsActing.length === 0) {
-      setError('At least one Person Acting on Behalf (Director) is required.');
-      return;
+    // For Standard and Enhanced CDD, require beneficial owners and directors
+    // For Simplified CDD, these requirements are relaxed per Section 18, AML/CFT Act 2009
+    if (cddDetermination.level !== 'SIMPLIFIED') {
+      if (beneficialOwners.length === 0) {
+        setError('At least one Beneficial Owner is required.');
+        return;
+      }
+      if (personsActing.length === 0) {
+        setError('At least one Person Acting on Behalf (Director) is required.');
+        return;
+      }
     }
     // Check if all required documents are uploaded (excluding Company Extract for NZ entities if automatically provided)
     const missingDocs = dynamicRequiredDocuments.filter(docType => {
@@ -638,9 +642,6 @@ const NewApplicationPage = () => {
     setError(null);
 
     try {
-      console.log('Attempting to create application with selectedEntity:', selectedEntity);
-      console.log('entityId for API call:', selectedEntity?.id);
-
       // Create the application
       const appResponse = await applicationsApi.create({
         entityId: selectedEntity.id,
@@ -651,6 +652,19 @@ const NewApplicationPage = () => {
 
       if (appResponse.data.success) {
         const appId = appResponse.data.data.application.id;
+
+        // Import NZBN data (beneficial owners and directors) if available
+        if (nzbnData && (nzbnData.shareholders.length > 0 || nzbnData.directors.length > 0)) {
+          try {
+            await nzbnApi.importToApplication(appId, {
+              shareholders: nzbnData.shareholders,
+              directors: nzbnData.directors,
+            });
+          } catch (importErr: any) {
+            console.warn('Failed to import NZBN data:', importErr);
+            // Continue with submission even if import fails
+          }
+        }
 
         // Update with risk assessment data
         await applicationsApi.update(appId, {

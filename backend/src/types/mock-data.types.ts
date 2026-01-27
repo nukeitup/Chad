@@ -10,6 +10,7 @@ export interface MockNZBNEntity {
   tradingName?: string;
   entityTypeCode: string;
   entityTypeName: string;
+  entityType?: string; // Internal entity type for CDD determination (e.g., 'NZ_STATE_ENTERPRISE', 'NZ_LISTED_ISSUER')
   entityStatusCode: string;
   entityStatusDescription: string;
   registrationDate: string;

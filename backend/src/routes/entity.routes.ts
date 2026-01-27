@@ -161,10 +161,28 @@ router.get(
       }
     }
 
+    // Determine the proper entity type based on mock data flags and explicit entityType
+    let resolvedEntityType = externalEntityData.entityType || 'NZ_COMPANY';
+
+    // If entityType not explicitly set, derive from flags
+    if (!externalEntityData.entityType) {
+      if (externalEntityData.isListedIssuer) {
+        resolvedEntityType = 'NZ_LISTED_ISSUER';
+      } else if (externalEntityData.isStateEnterprise) {
+        resolvedEntityType = 'NZ_STATE_ENTERPRISE';
+      } else if (externalEntityData.isLocalAuthority) {
+        resolvedEntityType = 'NZ_LOCAL_AUTHORITY';
+      } else if (externalEntityData.isGovernmentBody) {
+        resolvedEntityType = 'NZ_GOVT_DEPARTMENT';
+      } else if (externalEntityData.entityTypeCode === 'LP') {
+        resolvedEntityType = 'NZ_LIMITED_PARTNERSHIP';
+      }
+    }
+
     // Map external data to our internal Prisma Entity schema and create/update in DB
     const entityToSave = {
       legalName: externalEntityData.entityName || externalEntityData.legalName,
-      entityType: externalEntityData.entityType || 'NZ_COMPANY', // Default if not provided
+      entityType: resolvedEntityType,
       nzbn: externalEntityData.nzbn,
       tradingName: externalEntityData.tradingName || null,
       companyNumber: externalEntityData.companyNumber || externalEntityData.nzbn, // Use NZBN as companyNumber if not distinct
