@@ -68,6 +68,8 @@ import {
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../../store';
 import api, { applicationsApi, referenceApi, nzbnApi } from '../../services/api';
+import OrgChartPanel, { OrgChartShareholder } from '../../components/OrgChartPanel';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import {
   Entity,
   EntityType,
@@ -219,6 +221,12 @@ const NewApplicationPage = () => {
     }>;
   } | null>(null);
 
+  // Org chart dialog state
+  const [orgChartOpen, setOrgChartOpen] = useState(false);
+  const [orgChartLoading, setOrgChartLoading] = useState(false);
+  const [orgChartShareholders, setOrgChartShareholders] = useState<OrgChartShareholder[]>([]);
+  const [orgChartEntityName, setOrgChartEntityName] = useState('');
+
   // Documents state
   const [documents, setDocuments] = useState<DocumentUpload[]>([]);
   const [dynamicRequiredDocuments, setDynamicRequiredDocuments] = useState<string[]>([]);
@@ -251,6 +259,42 @@ const NewApplicationPage = () => {
       setSearchResults([]);
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  // Convert NZBN shareholder data to OrgChartShareholder format
+  const toOrgChartShareholders = (
+    rawShareholders: Array<{
+      shareholderName: string;
+      shareholderType: 'Individual' | 'Company';
+      numberOfShares: number;
+      totalShares?: number;
+    }>
+  ): OrgChartShareholder[] => {
+    const total = rawShareholders.reduce((sum, s) => sum + s.numberOfShares, 0) || 1;
+    return rawShareholders.map((s) => ({
+      name: s.shareholderName,
+      type: s.shareholderType,
+      percentage: Math.round(((s.numberOfShares / (s.totalShares || total)) * 100) * 10) / 10,
+      country: 'NZ',
+    }));
+  };
+
+  // Open org chart dialog for a search result (before selecting entity)
+  const handleViewOrgChart = async (nzbn: string, entityName: string) => {
+    setOrgChartEntityName(entityName);
+    setOrgChartShareholders([]);
+    setOrgChartOpen(true);
+    setOrgChartLoading(true);
+    try {
+      const res = await nzbnApi.getByNzbn(nzbn);
+      if (res.data.success && res.data.data) {
+        setOrgChartShareholders(toOrgChartShareholders(res.data.data.shareholders || []));
+      }
+    } catch {
+      setOrgChartShareholders([]);
+    } finally {
+      setOrgChartLoading(false);
     }
   };
 
@@ -790,9 +834,16 @@ const NewApplicationPage = () => {
                           Company Number (NZBN): {result.nzbn}
                         </Typography>
                       </Box>
-                      <Button variant="outlined" size="small">
-                        Select
-                      </Button>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2 }}>
+                        <Button variant="contained" size="small"
+                          onClick={(e) => { e.stopPropagation(); handleSelectNZEntity(result.nzbn); }}>
+                          Select
+                        </Button>
+                        <Button variant="outlined" size="small" startIcon={<AccountTreeIcon />}
+                          onClick={(e) => { e.stopPropagation(); handleViewOrgChart(result.nzbn, result.entityName); }}>
+                          Org Chart
+                        </Button>
+                      </Box>
                     </Box>
                   </Paper>
                 ))}
@@ -1452,6 +1503,24 @@ const NewApplicationPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Org Chart Dialog */}
+      <Dialog open={orgChartOpen} onClose={() => setOrgChartOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AccountTreeIcon color="primary" />
+          Ownership Structure — {orgChartEntityName}
+        </DialogTitle>
+        <DialogContent dividers>
+          <OrgChartPanel
+            entityName={orgChartEntityName}
+            shareholders={orgChartShareholders}
+            loading={orgChartLoading}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOrgChartOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 
@@ -1773,6 +1842,25 @@ const NewApplicationPage = () => {
           )}
         </AccordionDetails>
       </Accordion>
+
+      {/* Org Chart */}
+      {nzbnData && nzbnData.shareholders.length > 0 && (
+        <Accordion defaultExpanded>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccountTreeIcon color="primary" />
+              <Typography fontWeight={600}>Ownership Structure (Org Chart)</Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails>
+            <OrgChartPanel
+              entityName={selectedEntity?.legalName || ''}
+              entityCountry={selectedEntity?.countryOfIncorporation || 'NZ'}
+              shareholders={toOrgChartShareholders(nzbnData.shareholders)}
+            />
+          </AccordionDetails>
+        </Accordion>
+      )}
 
       {/* Compliance Checklist */}
       <Paper variant="outlined" sx={{ p: 3, mt: 3, bgcolor: 'background.default' }}>
