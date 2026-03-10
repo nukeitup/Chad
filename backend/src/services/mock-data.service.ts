@@ -279,7 +279,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     ],
   },
 
-  // Standard CDD - NZ Limited Partnership
+  // Standard CDD - NZ Limited Partnership (resolves 3 levels deep)
   '9429041567000': {
     nzbn: '9429041567000',
     entityName: 'WELLINGTON VENTURES LP',
@@ -301,22 +301,164 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     directors: [],
     shareholders: [
       {
-        shareholderName: 'Wellington GP Limited',
+        shareholderName: 'WELLINGTON GP LIMITED',
         shareholderType: 'Company',
         numberOfShares: 1,
+        totalShares: 100,
         allocationDate: '2019-09-01',
+        shareholderNzbn: '9429041580007',
+        shareholderCountry: 'NZ',
       },
       {
-        shareholderName: 'Tech Investor Fund LP',
+        shareholderName: 'TECH INVESTOR FUND LP',
         shareholderType: 'Company',
         numberOfShares: 50,
+        totalShares: 100,
         allocationDate: '2019-09-01',
+        shareholderNzbn: '9429041580008',
+        shareholderCountry: 'NZ',
       },
       {
         shareholderName: 'Sarah Williams',
         shareholderType: 'Individual',
         numberOfShares: 49,
+        totalShares: 100,
         allocationDate: '2019-09-01',
+        shareholderCountry: 'NZ',
+      },
+    ],
+  },
+
+  // Wellington GP Limited — General Partner of Wellington Ventures LP
+  '9429041580007': {
+    nzbn: '9429041580007',
+    entityName: 'WELLINGTON GP LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2019-08-01',
+    anzsicCode: 'K623',
+    anzsicDescription: 'Non-Depository Financing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '50 Willis Street',
+        postCode: '6011',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'James Wellington', appointmentDate: '2019-08-01' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'James Wellington',
+        shareholderType: 'Individual',
+        numberOfShares: 60,
+        totalShares: 100,
+        allocationDate: '2019-08-01',
+        shareholderCountry: 'NZ',
+      },
+      {
+        shareholderName: 'WELLINGTON MANAGEMENT SERVICES LIMITED',
+        shareholderType: 'Company',
+        numberOfShares: 40,
+        totalShares: 100,
+        allocationDate: '2019-08-01',
+        shareholderNzbn: '9429041580009',
+        shareholderCountry: 'NZ',
+      },
+    ],
+  },
+
+  // Wellington Management Services — owns 40% of Wellington GP
+  '9429041580009': {
+    nzbn: '9429041580009',
+    entityName: 'WELLINGTON MANAGEMENT SERVICES LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2015-03-22',
+    anzsicCode: 'M696',
+    anzsicDescription: 'Management Advice and Related Consulting Services',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '12 Manners Street',
+        postCode: '6011',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'Claire Henderson', appointmentDate: '2015-03-22' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'Claire Henderson',
+        shareholderType: 'Individual',
+        numberOfShares: 100,
+        totalShares: 100,
+        allocationDate: '2015-03-22',
+        shareholderCountry: 'NZ',
+      },
+    ],
+  },
+
+  // Tech Investor Fund LP — Limited Partner in Wellington Ventures LP
+  '9429041580008': {
+    nzbn: '9429041580008',
+    entityName: 'TECH INVESTOR FUND LP',
+    entityTypeCode: 'LP',
+    entityTypeName: 'NZ Limited Partnership',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2018-06-01',
+    anzsicCode: 'K624',
+    anzsicDescription: 'Financial Asset Investing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '23 Lambton Quay',
+        address2: 'Level 5',
+        postCode: '6011',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [],
+    shareholders: [
+      {
+        shareholderName: 'NZ Angel Network Limited',
+        shareholderType: 'Company',
+        numberOfShares: 45,
+        totalShares: 100,
+        allocationDate: '2018-06-01',
+        shareholderCountry: 'NZ',
+      },
+      {
+        shareholderName: 'NZ Government Innovation Fund',
+        shareholderType: 'Company',
+        numberOfShares: 30,
+        totalShares: 100,
+        allocationDate: '2018-06-01',
+        shareholderCountry: 'NZ',
+      },
+      {
+        shareholderName: 'Michael Chang',
+        shareholderType: 'Individual',
+        numberOfShares: 15,
+        totalShares: 100,
+        allocationDate: '2018-06-01',
+        shareholderCountry: 'NZ',
+      },
+      {
+        shareholderName: 'Emma Patel',
+        shareholderType: 'Individual',
+        numberOfShares: 10,
+        totalShares: 100,
+        allocationDate: '2018-06-01',
+        shareholderCountry: 'AU',
       },
     ],
   },
@@ -358,7 +500,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     ],
   },
 
-  // ── ACME GROUP ── Multi-level NZ + Overseas structure
+  // ── ACME GROUP ── Multi-level NZ + Overseas structure (3 layers)
   '9429041580001': {
     nzbn: '9429041580001',
     entityName: 'ACME HOLDINGS LIMITED',
@@ -390,6 +532,8 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 600,
         totalShares: 1000,
         allocationDate: '2015-03-10',
+        shareholderNzbn: '9429041580002',
+        shareholderCountry: 'NZ',
       },
       {
         shareholderName: 'Offshore Ventures Ltd',
@@ -397,11 +541,12 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 400,
         totalShares: 1000,
         allocationDate: '2015-03-10',
+        shareholderCountry: 'GB',
       },
     ],
   },
 
-  // Alpha Capital — NZ company, shareholder of Acme
+  // Alpha Capital — NZ company, shareholder of Acme (Layer 2)
   '9429041580002': {
     nzbn: '9429041580002',
     entityName: 'ALPHA CAPITAL LIMITED',
@@ -430,6 +575,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 700,
         totalShares: 1000,
         allocationDate: '2012-07-01',
+        shareholderCountry: 'NZ',
       },
       {
         shareholderName: 'BETA TRUST LIMITED',
@@ -437,11 +583,13 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 300,
         totalShares: 1000,
         allocationDate: '2012-07-01',
+        shareholderNzbn: '9429041580003',
+        shareholderCountry: 'NZ',
       },
     ],
   },
 
-  // Beta Trust — NZ company, shareholder of Alpha Capital
+  // Beta Trust — NZ company, shareholder of Alpha Capital (Layer 3 — ultimate individuals)
   '9429041580003': {
     nzbn: '9429041580003',
     entityName: 'BETA TRUST LIMITED',
@@ -470,6 +618,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 500,
         totalShares: 1000,
         allocationDate: '2010-01-20',
+        shareholderCountry: 'NZ',
       },
       {
         shareholderName: 'Robert Johnson',
@@ -477,11 +626,12 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 500,
         totalShares: 1000,
         allocationDate: '2010-01-20',
+        shareholderCountry: 'NZ',
       },
     ],
   },
 
-  // ── TAURANGA GROUP ── Four-level corporate chain + PEP
+  // ── TAURANGA GROUP ── 4-layer chain ending at Cayman Islands ultimate owner
   '9429041580004': {
     nzbn: '9429041580004',
     entityName: 'TAURANGA DEVELOPMENT LIMITED',
@@ -505,11 +655,13 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     ],
     shareholders: [
       {
-        shareholderName: 'Bay of Plenty Investments Ltd',
+        shareholderName: 'BAY OF PLENTY INVESTMENTS LIMITED',
         shareholderType: 'Company',
         numberOfShares: 750,
         totalShares: 1000,
         allocationDate: '2018-09-01',
+        shareholderNzbn: '9429041580010',
+        shareholderCountry: 'NZ',
       },
       {
         shareholderName: 'Chen Wei',
@@ -517,6 +669,86 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 250,
         totalShares: 1000,
         allocationDate: '2018-09-01',
+        shareholderCountry: 'CN',
+      },
+    ],
+  },
+
+  // Bay of Plenty Investments — Layer 2 of Tauranga chain
+  '9429041580010': {
+    nzbn: '9429041580010',
+    entityName: 'BAY OF PLENTY INVESTMENTS LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2016-04-12',
+    anzsicCode: 'K624',
+    anzsicDescription: 'Financial Asset Investing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '3 Devonport Road',
+        postCode: '3110',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'Thomas Ngata', appointmentDate: '2016-04-12' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'PACIFIC RIM HOLDINGS NZ LIMITED',
+        shareholderType: 'Company',
+        numberOfShares: 800,
+        totalShares: 1000,
+        allocationDate: '2016-04-12',
+        shareholderNzbn: '9429041580011',
+        shareholderCountry: 'NZ',
+      },
+      {
+        shareholderName: 'Thomas Ngata',
+        shareholderType: 'Individual',
+        numberOfShares: 200,
+        totalShares: 1000,
+        allocationDate: '2016-04-12',
+        shareholderCountry: 'NZ',
+      },
+    ],
+  },
+
+  // Pacific Rim Holdings NZ — Layer 3, held by Cayman vehicle
+  '9429041580011': {
+    nzbn: '9429041580011',
+    entityName: 'PACIFIC RIM HOLDINGS NZ LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2014-11-30',
+    anzsicCode: 'K624',
+    anzsicDescription: 'Financial Asset Investing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '88 The Terrace',
+        address2: 'Level 14',
+        postCode: '6011',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'CR Pacific Director Services Ltd', appointmentDate: '2014-11-30' },
+    ],
+    shareholders: [
+      {
+        // Ultimate beneficial owner — Cayman Islands special purpose vehicle
+        shareholderName: 'CR Pacific Special Purpose Vehicle Ltd',
+        shareholderType: 'Company',
+        numberOfShares: 1000,
+        totalShares: 1000,
+        allocationDate: '2014-11-30',
+        shareholderCountry: 'KY', // Cayman Islands — HIGH RISK jurisdiction
       },
     ],
   },

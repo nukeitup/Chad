@@ -262,13 +262,57 @@ const NewApplicationPage = () => {
     }
   };
 
-  // Convert NZBN shareholder data to OrgChartShareholder format
+  // Recursively build OrgChartShareholder tree, following shareholderNzbn links up to 5 levels deep
+  const buildOrgChartTree = async (
+    rawShareholders: Array<{
+      shareholderName: string;
+      shareholderType: 'Individual' | 'Company';
+      numberOfShares: number;
+      totalShares?: number;
+      shareholderNzbn?: string;
+      shareholderCountry?: string;
+    }>,
+    depth: number = 0
+  ): Promise<OrgChartShareholder[]> => {
+    if (depth > 4) return []; // safety cap on recursion
+    const total = rawShareholders.reduce((sum, s) => sum + s.numberOfShares, 0) || 1;
+
+    const nodes: OrgChartShareholder[] = await Promise.all(
+      rawShareholders.map(async (s) => {
+        const pct = Math.round(((s.numberOfShares / (s.totalShares || total)) * 100) * 10) / 10;
+        const node: OrgChartShareholder = {
+          name: s.shareholderName,
+          type: s.shareholderType,
+          percentage: pct,
+          country: s.shareholderCountry || 'NZ',
+        };
+
+        // If this shareholder is a resolvable NZ company, fetch its own shareholders
+        if (s.shareholderType === 'Company' && s.shareholderNzbn) {
+          try {
+            const res = await nzbnApi.getByNzbn(s.shareholderNzbn);
+            if (res.data.success && res.data.data?.shareholders?.length > 0) {
+              node.shareholders = await buildOrgChartTree(res.data.data.shareholders, depth + 1);
+            }
+          } catch { /* entity not in test data or API error — leave as leaf */ }
+        }
+
+        return node;
+      })
+    );
+
+    return nodes;
+  };
+
+  // Flat conversion for use with already-fetched nzbnData (Review step)
   const toOrgChartShareholders = (
     rawShareholders: Array<{
       shareholderName: string;
       shareholderType: 'Individual' | 'Company';
       numberOfShares: number;
       totalShares?: number;
+      shareholderNzbn?: string;
+      shareholderCountry?: string;
     }>
   ): OrgChartShareholder[] => {
     const total = rawShareholders.reduce((sum, s) => sum + s.numberOfShares, 0) || 1;
@@ -276,11 +320,11 @@ const NewApplicationPage = () => {
       name: s.shareholderName,
       type: s.shareholderType,
       percentage: Math.round(((s.numberOfShares / (s.totalShares || total)) * 100) * 10) / 10,
-      country: 'NZ',
+      country: s.shareholderCountry || 'NZ',
     }));
   };
 
-  // Open org chart dialog for a search result (before selecting entity)
+  // Open org chart dialog — fetches full recursive ownership tree
   const handleViewOrgChart = async (nzbn: string, entityName: string) => {
     setOrgChartEntityName(entityName);
     setOrgChartShareholders([]);
@@ -289,7 +333,8 @@ const NewApplicationPage = () => {
     try {
       const res = await nzbnApi.getByNzbn(nzbn);
       if (res.data.success && res.data.data) {
-        setOrgChartShareholders(toOrgChartShareholders(res.data.data.shareholders || []));
+        const tree = await buildOrgChartTree(res.data.data.shareholders || []);
+        setOrgChartShareholders(tree);
       }
     } catch {
       setOrgChartShareholders([]);

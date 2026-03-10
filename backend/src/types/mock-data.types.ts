@@ -37,6 +37,8 @@ export interface MockNZBNEntity {
     numberOfShares: number;
     totalShares?: number;
     allocationDate: string;
+    shareholderNzbn?: string;    // NZBN of NZ company shareholder — enables recursive ownership fetch
+    shareholderCountry?: string; // Country code for overseas shareholders (e.g. 'KY', 'VG', 'SG')
   }>;
   // Simplified CDD eligibility flags
   isListedIssuer?: boolean;
