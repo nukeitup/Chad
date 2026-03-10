@@ -1504,23 +1504,6 @@ const NewApplicationPage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Org Chart Dialog */}
-      <Dialog open={orgChartOpen} onClose={() => setOrgChartOpen(false)} maxWidth="lg" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AccountTreeIcon color="primary" />
-          Ownership Structure — {orgChartEntityName}
-        </DialogTitle>
-        <DialogContent dividers>
-          <OrgChartPanel
-            entityName={orgChartEntityName}
-            shareholders={orgChartShareholders}
-            loading={orgChartLoading}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOrgChartOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 
@@ -1974,6 +1957,24 @@ const NewApplicationPage = () => {
           </Box>
         </CardContent>
       </Card>
+
+      {/* Org Chart Dialog — lives at top level so it works from any step */}
+      <Dialog open={orgChartOpen} onClose={() => setOrgChartOpen(false)} maxWidth="lg" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AccountTreeIcon color="primary" />
+          Ownership Structure — {orgChartEntityName}
+        </DialogTitle>
+        <DialogContent dividers>
+          <OrgChartPanel
+            entityName={orgChartEntityName}
+            shareholders={orgChartShareholders}
+            loading={orgChartLoading}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOrgChartOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

@@ -120,7 +120,7 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
     entityName: 'AUCKLAND COUNCIL',
     entityTypeCode: 'LA',
     entityTypeName: 'Local Authority',
-    entityType: 'NZ_LOCAL_AUTHORITY', // Explicit entity type for Simplified CDD
+    entityType: 'NZ_LOCAL_AUTHORITY',
     entityStatusCode: 'REGD',
     entityStatusDescription: 'Registered',
     registrationDate: '2010-11-01',
@@ -142,7 +142,15 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         appointmentDate: '2022-10-01',
       },
     ],
-    shareholders: [],
+    shareholders: [
+      {
+        shareholderName: 'New Zealand Crown',
+        shareholderType: 'Company',
+        numberOfShares: 100,
+        totalShares: 100,
+        allocationDate: '2010-11-01',
+      },
+    ],
   },
 
   // Simplified CDD - State Enterprise
@@ -346,6 +354,267 @@ export const MOCK_NZBN_ENTITIES: Record<string, MockNZBNEntity> = {
         numberOfShares: 100,
         totalShares: 100,
         allocationDate: '2021-03-01',
+      },
+    ],
+  },
+
+  // ── ACME GROUP ── Multi-level NZ + Overseas structure
+  '9429041580001': {
+    nzbn: '9429041580001',
+    entityName: 'ACME HOLDINGS LIMITED',
+    tradingName: 'Acme Holdings',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2015-03-10',
+    anzsicCode: 'K624',
+    anzsicDescription: 'Financial Asset Investing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '22 Shortland Street',
+        address2: 'Level 8',
+        address3: 'Auckland CBD',
+        postCode: '1010',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'James Acme', appointmentDate: '2015-03-10' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'ALPHA CAPITAL LIMITED',
+        shareholderType: 'Company',
+        numberOfShares: 600,
+        totalShares: 1000,
+        allocationDate: '2015-03-10',
+      },
+      {
+        shareholderName: 'Offshore Ventures Ltd',
+        shareholderType: 'Company',
+        numberOfShares: 400,
+        totalShares: 1000,
+        allocationDate: '2015-03-10',
+      },
+    ],
+  },
+
+  // Alpha Capital — NZ company, shareholder of Acme
+  '9429041580002': {
+    nzbn: '9429041580002',
+    entityName: 'ALPHA CAPITAL LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2012-07-01',
+    anzsicCode: 'K623',
+    anzsicDescription: 'Non-Depository Financing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '50 Customhouse Quay',
+        postCode: '6011',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'John Smith', appointmentDate: '2012-07-01' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'John Smith',
+        shareholderType: 'Individual',
+        numberOfShares: 700,
+        totalShares: 1000,
+        allocationDate: '2012-07-01',
+      },
+      {
+        shareholderName: 'BETA TRUST LIMITED',
+        shareholderType: 'Company',
+        numberOfShares: 300,
+        totalShares: 1000,
+        allocationDate: '2012-07-01',
+      },
+    ],
+  },
+
+  // Beta Trust — NZ company, shareholder of Alpha Capital
+  '9429041580003': {
+    nzbn: '9429041580003',
+    entityName: 'BETA TRUST LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2010-01-20',
+    anzsicCode: 'L672',
+    anzsicDescription: 'Non-Financial Asset Investing',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '77 Victoria Street',
+        postCode: '6011',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'Jane Doe', appointmentDate: '2010-01-20' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'Jane Doe',
+        shareholderType: 'Individual',
+        numberOfShares: 500,
+        totalShares: 1000,
+        allocationDate: '2010-01-20',
+      },
+      {
+        shareholderName: 'Robert Johnson',
+        shareholderType: 'Individual',
+        numberOfShares: 500,
+        totalShares: 1000,
+        allocationDate: '2010-01-20',
+      },
+    ],
+  },
+
+  // ── TAURANGA GROUP ── Four-level corporate chain + PEP
+  '9429041580004': {
+    nzbn: '9429041580004',
+    entityName: 'TAURANGA DEVELOPMENT LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2018-09-01',
+    anzsicCode: 'E301',
+    anzsicDescription: 'Residential Building Construction',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '10 Cameron Road',
+        postCode: '3110',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'Chen Wei', appointmentDate: '2018-09-01' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'Bay of Plenty Investments Ltd',
+        shareholderType: 'Company',
+        numberOfShares: 750,
+        totalShares: 1000,
+        allocationDate: '2018-09-01',
+      },
+      {
+        shareholderName: 'Chen Wei',
+        shareholderType: 'Individual',
+        numberOfShares: 250,
+        totalShares: 1000,
+        allocationDate: '2018-09-01',
+      },
+    ],
+  },
+
+  // ── QUEENSTOWN RESORT GROUP ── Overseas + NZ mixed structure
+  '9429041580005': {
+    nzbn: '9429041580005',
+    entityName: 'QUEENSTOWN RESORT GROUP LIMITED',
+    tradingName: 'QRG',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2017-05-15',
+    anzsicCode: 'H510',
+    anzsicDescription: 'Accommodation',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '38 The Mall',
+        address2: 'Queenstown',
+        postCode: '9300',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'Olivia Turner', appointmentDate: '2017-05-15' },
+      { directorNumber: 'D002', fullName: 'Singapore Resort Holdings Nominee', appointmentDate: '2020-01-01' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'Singapore Resort Holdings Pte Ltd',
+        shareholderType: 'Company',
+        numberOfShares: 650,
+        totalShares: 1000,
+        allocationDate: '2017-05-15',
+      },
+      {
+        shareholderName: 'Olivia Turner',
+        shareholderType: 'Individual',
+        numberOfShares: 200,
+        totalShares: 1000,
+        allocationDate: '2017-05-15',
+      },
+      {
+        shareholderName: 'NZ Tourism Fund Limited',
+        shareholderType: 'Company',
+        numberOfShares: 150,
+        totalShares: 1000,
+        allocationDate: '2019-03-01',
+      },
+    ],
+  },
+
+  // ── CHRISTCHURCH REBUILD PARTNERS ── Three-way JV structure
+  '9429041580006': {
+    nzbn: '9429041580006',
+    entityName: 'CHRISTCHURCH REBUILD PARTNERS LIMITED',
+    entityTypeCode: 'LTD',
+    entityTypeName: 'NZ Limited Company',
+    entityStatusCode: 'REGD',
+    entityStatusDescription: 'Registered',
+    registrationDate: '2013-02-22',
+    anzsicCode: 'E302',
+    anzsicDescription: 'Non-Residential Building Construction',
+    addresses: [
+      {
+        addressType: 'Registered Office',
+        address1: '150 Victoria Street',
+        postCode: '8013',
+        countryCode: 'NZ',
+      },
+    ],
+    directors: [
+      { directorNumber: 'D001', fullName: 'Sarah Williams', appointmentDate: '2013-02-22' },
+      { directorNumber: 'D002', fullName: 'David Mitchell', appointmentDate: '2013-02-22' },
+    ],
+    shareholders: [
+      {
+        shareholderName: 'Canterbury Construction Holdings Ltd',
+        shareholderType: 'Company',
+        numberOfShares: 334,
+        totalShares: 1000,
+        allocationDate: '2013-02-22',
+      },
+      {
+        shareholderName: 'NZ Rebuild Fund LP',
+        shareholderType: 'Company',
+        numberOfShares: 333,
+        totalShares: 1000,
+        allocationDate: '2013-02-22',
+      },
+      {
+        shareholderName: 'David Mitchell',
+        shareholderType: 'Individual',
+        numberOfShares: 333,
+        totalShares: 1000,
+        allocationDate: '2013-02-22',
       },
     ],
   },
