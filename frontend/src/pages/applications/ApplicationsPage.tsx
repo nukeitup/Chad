@@ -27,6 +27,11 @@ import {
   Select,
   SelectChangeEvent,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -39,7 +44,7 @@ import {
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchApplications, setFilters } from '../../store/slices/applicationSlice';
+import { fetchApplications, setFilters, deleteApplication } from '../../store/slices/applicationSlice';
 import { format } from 'date-fns';
 import { CDDApplication, WorkflowState, RiskRating, CDDLevel } from '../../types';
 
@@ -85,6 +90,9 @@ const ApplicationsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(
@@ -137,6 +145,32 @@ const ApplicationsPage = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedAppId(null);
+  };
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+    setAnchorEl(null);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!selectedAppId) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await dispatch(deleteApplication(selectedAppId)).unwrap();
+      setDeleteDialogOpen(false);
+      setSelectedAppId(null);
+    } catch (err: any) {
+      setDeleteError(err || 'Failed to delete application');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setSelectedAppId(null);
+    setDeleteError(null);
   };
 
   const filteredApplications = applications.filter(
@@ -385,16 +419,39 @@ const ApplicationsPage = () => {
           Edit
         </MenuItem>
         <MenuItem
-          onClick={() => {
-            // Handle delete
-            handleMenuClose();
-          }}
+          onClick={handleDeleteClick}
           sx={{ color: 'error.main' }}
         >
           <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
           Delete
         </MenuItem>
       </Menu>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete Application</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this application? This action cannot be undone.
+          </DialogContentText>
+          {deleteError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {deleteError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteConfirm}
+            disabled={isDeleting}
+          >
+            {isDeleting ? <CircularProgress size={20} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

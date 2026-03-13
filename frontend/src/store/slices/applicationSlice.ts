@@ -151,6 +151,19 @@ export const rejectApplication = createAsyncThunk(
   }
 );
 
+export const deleteApplication = createAsyncThunk(
+  'applications/delete',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await applicationsApi.delete(id);
+      return id;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      return rejectWithValue(err.response?.data?.error || 'Failed to delete application');
+    }
+  }
+);
+
 export const fetchApplicationStats = createAsyncThunk(
   'applications/fetchStats',
   async (_, { rejectWithValue }) => {
@@ -248,6 +261,12 @@ const applicationSlice = createSlice({
       if (index !== -1) {
         state.applications[index] = action.payload;
       }
+    });
+
+    // Delete
+    builder.addCase(deleteApplication.fulfilled, (state, action) => {
+      state.applications = state.applications.filter((a) => a.id !== action.payload);
+      state.pagination.total = Math.max(0, state.pagination.total - 1);
     });
 
     // Stats
