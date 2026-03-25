@@ -154,6 +154,7 @@ router.get(
         }
 
         const data = await response.json();
+        console.log('NZBN company-details:', JSON.stringify(data['company-details']));
         externalEntityData = data;
       } catch (error) {
         if (error instanceof ApiError) throw error;
