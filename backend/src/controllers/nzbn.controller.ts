@@ -123,6 +123,7 @@ export const getEntityByNzbn = asyncHandler(
       });
 
       const d = response.data;
+      console.log('NZBN RAW RESPONSE:', JSON.stringify(d, null, 2));
 
       // Map NZBN API v5 response to the shape the frontend expects
       const shareholders = (d.shareAllocations || []).map((s: any) => ({
