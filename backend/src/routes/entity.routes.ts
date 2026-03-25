@@ -161,23 +161,29 @@ router.get(
       }
     }
 
-    // Determine the proper entity type based on mock data flags and explicit entityType
-    let resolvedEntityType = externalEntityData.entityType || 'NZ_COMPANY';
+    // Map NZBN API v5 entityTypeCode to internal EntityType enum
+    const entityTypeCodeMap: Record<string, string> = {
+      'LTD':        'NZ_COMPANY',
+      'UNLIM':      'NZ_COMPANY',
+      'COOP':       'NZ_COMPANY',
+      'LP':         'NZ_LIMITED_PARTNERSHIP',
+      'GovtLocal':  'NZ_LOCAL_AUTHORITY',
+      'GOVT':       'NZ_GOVT_DEPARTMENT',
+      'SOE':        'NZ_STATE_ENTERPRISE',
+      'T':          'TRUST',
+      'FGNS':       'OVERSEAS_COMPANY',
+      'I':          'NZ_COMPANY', // Incorporated Society — closest match
+    };
+    const resolvedEntityType = entityTypeCodeMap[externalEntityData.entityTypeCode] || 'NZ_COMPANY';
 
-    // If entityType not explicitly set, derive from flags
-    if (!externalEntityData.entityType) {
-      if (externalEntityData.isListedIssuer) {
-        resolvedEntityType = 'NZ_LISTED_ISSUER';
-      } else if (externalEntityData.isStateEnterprise) {
-        resolvedEntityType = 'NZ_STATE_ENTERPRISE';
-      } else if (externalEntityData.isLocalAuthority) {
-        resolvedEntityType = 'NZ_LOCAL_AUTHORITY';
-      } else if (externalEntityData.isGovernmentBody) {
-        resolvedEntityType = 'NZ_GOVT_DEPARTMENT';
-      } else if (externalEntityData.entityTypeCode === 'LP') {
-        resolvedEntityType = 'NZ_LIMITED_PARTNERSHIP';
-      }
-    }
+    // Map entityStatusCode to internal EntityStatus enum
+    const entityStatusCodeMap: Record<string, string> = {
+      '50': 'ACTIVE',
+      '80': 'STRUCK_OFF',
+      '70': 'STRUCK_OFF',
+      '40': 'INACTIVE',
+    };
+    const resolvedEntityStatus = entityStatusCodeMap[externalEntityData.entityStatusCode] || 'ACTIVE';
 
     // Map external data to our internal Prisma Entity schema and create/update in DB
     const addressList: any[] = externalEntityData.addresses?.addressList || [];
@@ -193,8 +199,8 @@ router.get(
       companyNumber: companyDetails?.sourceRegisterUniqueIdentifier || externalEntityData.nzbn,
       countryOfIncorporation: companyDetails?.countryOfOrigin || 'NZ',
       incorporationDate: externalEntityData.registrationDate ? new Date(externalEntityData.registrationDate) : null,
-      entityStatus: externalEntityData.entityStatus || 'ACTIVE',
-      isListedIssuer: companyDetails?.stockExchangeListed != null,
+      entityStatus: resolvedEntityStatus,
+      isListedIssuer: !!(companyDetails?.stockExchangeListed || companyDetails?.nzsxCode),
       listedExchange: companyDetails?.nzsxCode || null,
       registeredStreet: registeredAddr?.address1 || null,
       registeredCity: registeredAddr?.address3 || null,
