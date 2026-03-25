@@ -226,7 +226,7 @@ const AboutPage: React.FC = () => {
               </Typography>
               <Grid container spacing={2}>
                 {/* Frontend */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}>
                     <Typography variant="subtitle2" sx={{ color: 'info.light' }}>PRESENTATION LAYER</Typography>
                     <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
@@ -237,7 +237,7 @@ const AboutPage: React.FC = () => {
                   </Paper>
                 </Grid>
                 {/* Backend */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}>
                     <Typography variant="subtitle2" sx={{ color: 'success.light' }}>APPLICATION LAYER</Typography>
                     <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
@@ -248,14 +248,25 @@ const AboutPage: React.FC = () => {
                   </Paper>
                 </Grid>
                 {/* Data */}
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={3}>
                   <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}>
                     <Typography variant="subtitle2" sx={{ color: 'warning.light' }}>DATA LAYER</Typography>
                     <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
-                    <Typography variant="body2">• PostgreSQL Database</Typography>
+                    <Typography variant="body2">• PostgreSQL (Neon)</Typography>
                     <Typography variant="body2">• Prisma ORM</Typography>
                     <Typography variant="body2">• Encrypted at Rest</Typography>
                     <Typography variant="body2">• Audit Trail Logging</Typography>
+                  </Paper>
+                </Grid>
+                {/* Infrastructure */}
+                <Grid item xs={12} md={3}>
+                  <Paper sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.1)', color: 'white' }}>
+                    <Typography variant="subtitle2" sx={{ color: 'error.light' }}>INFRASTRUCTURE LAYER</Typography>
+                    <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.2)' }} />
+                    <Typography variant="body2">• Vercel Edge Network</Typography>
+                    <Typography variant="body2">• Serverless Functions</Typography>
+                    <Typography variant="body2">• Automatic HTTPS / TLS</Typography>
+                    <Typography variant="body2">• Zero-trust secret storage</Typography>
                   </Paper>
                 </Grid>
               </Grid>
@@ -274,9 +285,12 @@ const AboutPage: React.FC = () => {
                   {[
                     { icon: <LockIcon />, text: 'JWT Authentication with secure token handling' },
                     { icon: <VerifiedUserIcon />, text: 'Role-Based Access Control (RBAC)' },
-                    { icon: <SecurityIcon />, text: 'TLS 1.3 encryption in transit' },
-                    { icon: <StorageIcon />, text: 'AES-256 encryption at rest' },
+                    { icon: <SecurityIcon />, text: 'TLS 1.3 encryption in transit (enforced by Vercel)' },
+                    { icon: <StorageIcon />, text: 'AES-256 encryption at rest (Neon PostgreSQL)' },
                     { icon: <ApiIcon />, text: 'Rate limiting & request validation' },
+                    { icon: <CloudIcon />, text: 'API keys stored as Vercel environment secrets — never exposed in source code or client' },
+                    { icon: <ShieldIcon />, text: 'Vercel DDoS protection & edge firewall' },
+                    { icon: <LockIcon />, text: 'CORS policy restricts requests to authorised origins only' },
                   ].map((item, i) => (
                     <ListItem key={i}>
                       <ListItemIcon sx={{ minWidth: 36 }}>{item.icon}</ListItemIcon>
