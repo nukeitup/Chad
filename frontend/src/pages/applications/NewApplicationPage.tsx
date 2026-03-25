@@ -462,9 +462,12 @@ const NewApplicationPage = () => {
       /nominee|nominees|custodian|custodians/i.test(s.shareholderName)
     );
 
-    const hasCompanyShareholder = nzbnData.shareholders.some(s => s.shareholderType === 'Company');
-    const companyShareholderCount = nzbnData.shareholders.filter(s => s.shareholderType === 'Company').length;
-    const isComplexOwnership = companyShareholderCount > 2;
+    // Complex ownership: 3+ non-nominee corporate shareholders indicates multi-layer structure
+    // Nominees are assessed separately via their own Enhanced CDD trigger
+    const nonNomineeCompanyShareholders = nzbnData.shareholders.filter(
+      s => s.shareholderType === 'Company' && !/nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+    );
+    const isComplexOwnership = nonNomineeCompanyShareholders.length > 2;
 
     const hasPEP = beneficialOwners.some(bo => bo.pepStatus && bo.pepStatus !== 'NOT_PEP');
 

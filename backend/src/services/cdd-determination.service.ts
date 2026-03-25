@@ -230,12 +230,16 @@ export const cddDeterminationService = {
       });
     }
 
-    // 2. Check ownership complexity (>3 layers)
+    // 2. Check ownership complexity (3+ layers, excludes nominee arrangements which have their own trigger)
     const ownershipLayers = this.calculateOwnershipLayers(beneficialOwners);
-    if (ownershipLayers > 3) {
+    const hasNomineeBO = beneficialOwners.some(bo => bo.isNominee);
+    const nonNomineeOwnershipLayers = hasNomineeBO
+      ? this.calculateOwnershipLayers(beneficialOwners.filter(bo => !bo.isNominee))
+      : ownershipLayers;
+    if (nonNomineeOwnershipLayers > 2) {
       triggers.push({
         triggerType: 'COMPLEX_OWNERSHIP',
-        description: `Complex ownership structure with ${ownershipLayers} layers detected`,
+        description: `Complex ownership structure with ${nonNomineeOwnershipLayers} layers detected`,
         legalReference: 'RBNZ Enhanced CDD Guideline (April 2024)',
       });
     }
@@ -512,9 +516,9 @@ export const cddDeterminationService = {
       riskScore += 8;
     }
 
-    // Ownership complexity (rescaled from 0-15 to 0-15)
-    const ownershipLayers = this.calculateOwnershipLayers(beneficialOwners);
-    if (ownershipLayers > 3) {
+    // Ownership complexity (nominees excluded — assessed separately)
+    const ownershipLayers = this.calculateOwnershipLayers(beneficialOwners.filter(bo => !bo.isNominee));
+    if (ownershipLayers > 2) {
       factors.push({ category: 'entity', description: `Complex ownership: ${ownershipLayers} layers`, points: 15 });
       riskScore += 15;
     } else if (ownershipLayers > 1) {
