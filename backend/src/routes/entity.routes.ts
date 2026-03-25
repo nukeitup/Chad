@@ -154,7 +154,6 @@ router.get(
         }
 
         const data = await response.json();
-        console.log('NZBN company-details:', JSON.stringify(data['company-details']));
         externalEntityData = data;
       } catch (error) {
         if (error instanceof ApiError) throw error;
@@ -201,8 +200,8 @@ router.get(
       countryOfIncorporation: companyDetails?.countryOfOrigin || 'NZ',
       incorporationDate: externalEntityData.registrationDate ? new Date(externalEntityData.registrationDate) : null,
       entityStatus: resolvedEntityStatus,
-      isListedIssuer: !!(companyDetails?.stockExchangeListed || companyDetails?.nzsxCode),
-      listedExchange: companyDetails?.nzsxCode || null,
+      isListedIssuer: !!(companyDetails?.stockExchangeListed || companyDetails?.nzsxCode || companyDetails?.extensiveShareholding),
+      listedExchange: companyDetails?.nzsxCode || (companyDetails?.extensiveShareholding ? 'NZX' : null),
       registeredStreet: registeredAddr?.address1 || null,
       registeredCity: registeredAddr?.address3 || null,
       registeredPostcode: registeredAddr?.postCode || null,
