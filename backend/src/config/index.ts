@@ -9,7 +9,7 @@ export const config = {
 
   // Test Mode - enables mock data for testing without API keys
   // Set TEST_MODE=true in .env or NODE_ENV=development for automatic test mode
-  testMode: process.env.TEST_MODE === 'true' || process.env.NODE_ENV === 'development',
+  testMode: process.env.TEST_MODE === 'true',
 
   // Database
   databaseUrl: process.env.DATABASE_URL || '',
