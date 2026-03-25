@@ -465,13 +465,13 @@ const NewApplicationPage = () => {
     const isHighRiskJurisdiction = FATF_HIGH_RISK.has(country);
 
     const hasNominee = shareholders.some(s =>
-      /nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+      /nominee|custodian|custodial/i.test(s.shareholderName)
     );
 
     // Complex ownership: 3+ non-nominee corporate shareholders indicates multi-layer structure
     // Nominees are assessed separately via their own Enhanced CDD trigger
     const nonNomineeCompanyShareholders = shareholders.filter(
-      s => s.shareholderType === 'Company' && !/nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+      s => s.shareholderType === 'Company' && !/nominee|custodian|custodial/i.test(s.shareholderName)
     );
     const isComplexOwnership = nonNomineeCompanyShareholders.length > 2;
 
@@ -531,7 +531,7 @@ const NewApplicationPage = () => {
 
     // Ownership complexity — use shareholder data consistent with CDD determination
     const nonNomineeCos = nzbnData.shareholders.filter(
-      s => s.shareholderType === 'Company' && !/nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+      s => s.shareholderType === 'Company' && !/nominee|custodian|custodial/i.test(s.shareholderName)
     );
     const hasAnyCorporateShareholder = nonNomineeCos.length > 0;
     if (nonNomineeCos.length > 2) {
@@ -560,7 +560,7 @@ const NewApplicationPage = () => {
     }
 
     const hasNomineeShareholderInData = nzbnData.shareholders.some(s =>
-      /nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+      /nominee|custodian|custodial/i.test(s.shareholderName)
     );
     if (hasNomineeShareholderInData) {
       factors.push({ category: 'Beneficial Owners', description: 'Nominee arrangements present', points: 12 });
