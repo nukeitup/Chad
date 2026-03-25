@@ -5,7 +5,7 @@ import { AuthenticatedRequest } from '../types';
 import { config } from '../config';
 import { mockDataService, MOCK_NZBN_ENTITIES } from '../services/mock-data.service';
 
-const NZBN_API_URL = 'https://api.business.govt.nz/services/v4/nzbn/entities';
+const NZBN_API_URL = 'https://api.business.govt.nz/gateway/nzbn/v5/entities';
 
 /**
  * Search for an entity on the NZBN register.
@@ -48,9 +48,12 @@ export const searchNzbn = asyncHandler(
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.error('NZBN API Error:', error.response?.data);
+        console.error('NZBN API Error status:', error.response?.status);
+        console.error('NZBN API Error data:', JSON.stringify(error.response?.data));
+        console.error('NZBN API Request URL:', error.config?.url);
+        console.error('NZBN API Request params:', JSON.stringify(error.config?.params));
         throw new ApiError(
-          'Failed to fetch data from NZBN API.',
+          `NZBN API error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`,
           error.response?.status || 500
         );
       }
