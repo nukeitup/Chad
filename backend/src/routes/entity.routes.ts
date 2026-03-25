@@ -154,10 +154,6 @@ router.get(
         }
 
         const data = await response.json();
-        console.log('NZBN entity raw response:', JSON.stringify(data, null, 2));
-        // DEBUG: return raw response so we can inspect v5 field names
-        res.json({ success: true, debug: true, data });
-        return;
         externalEntityData = data;
       } catch (error) {
         if (error instanceof ApiError) throw error;
@@ -184,26 +180,30 @@ router.get(
     }
 
     // Map external data to our internal Prisma Entity schema and create/update in DB
+    const addressList: any[] = externalEntityData.addresses?.addressList || [];
+    const registeredAddr = addressList.find((a: any) => a.addressType === 'REGISTERED');
+    const serviceAddr = addressList.find((a: any) => a.addressType === 'SERVICE');
+    const companyDetails = externalEntityData['company-details'];
+
     const entityToSave = {
       legalName: externalEntityData.entityName || externalEntityData.legalName,
       entityType: resolvedEntityType,
       nzbn: externalEntityData.nzbn,
-      tradingName: externalEntityData.tradingName || null,
-      companyNumber: externalEntityData.companyNumber || externalEntityData.nzbn, // Use NZBN as companyNumber if not distinct
-      countryOfIncorporation: externalEntityData.countryOfIncorporation || 'NZ',
+      tradingName: externalEntityData.tradingNames?.[0]?.name || null,
+      companyNumber: companyDetails?.sourceRegisterUniqueIdentifier || externalEntityData.nzbn,
+      countryOfIncorporation: companyDetails?.countryOfOrigin || 'NZ',
       incorporationDate: externalEntityData.registrationDate ? new Date(externalEntityData.registrationDate) : null,
       entityStatus: externalEntityData.entityStatus || 'ACTIVE',
-      isListedIssuer: externalEntityData.isListedIssuer || false,
-      listedExchange: externalEntityData.listedExchange || null,
-      // Default addresses to null if not present in external data
-      registeredStreet: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.address1 || null,
-      registeredCity: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.city || null,
-      registeredPostcode: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.postCode || null,
-      registeredCountry: externalEntityData.addresses?.find((a: any) => a.addressType === 'Registered Office')?.countryCode || null,
-      businessStreet: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.address1 || null,
-      businessCity: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.city || null,
-      businessPostcode: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.postCode || null,
-      businessCountry: externalEntityData.addresses?.find((a: any) => a.addressType === 'Physical Address')?.countryCode || null,
+      isListedIssuer: companyDetails?.stockExchangeListed != null,
+      listedExchange: companyDetails?.nzsxCode || null,
+      registeredStreet: registeredAddr?.address1 || null,
+      registeredCity: registeredAddr?.address3 || null,
+      registeredPostcode: registeredAddr?.postCode || null,
+      registeredCountry: registeredAddr?.countryCode || null,
+      businessStreet: serviceAddr?.address1 || null,
+      businessCity: serviceAddr?.address3 || null,
+      businessPostcode: serviceAddr?.postCode || null,
+      businessCountry: serviceAddr?.countryCode || null,
     };
 
     // Ensure entityType is a valid enum member for Prisma

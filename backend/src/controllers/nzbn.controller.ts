@@ -123,25 +123,36 @@ export const getEntityByNzbn = asyncHandler(
       });
 
       const d = response.data;
-      console.log('NZBN RAW RESPONSE:', JSON.stringify(d, null, 2));
+      const companyDetails = d['company-details'];
+      const totalShares = companyDetails?.shareholding?.numberOfShares || 1;
+      const shareAllocations = companyDetails?.shareholding?.shareAllocation || [];
 
-      // Map NZBN API v5 response to the shape the frontend expects
-      const shareholders = (d.shareAllocations || []).map((s: any) => ({
-        shareholderName: s.shareholder?.name || s.name || '',
-        shareholderType: s.shareholder?.shareholderType === 'INDIVIDUAL' ? 'Individual' : 'Company',
-        numberOfShares: s.shares ?? s.numberOfShares ?? 0,
-        totalShares: s.totalShares ?? undefined,
-        allocationDate: s.allocationDate ?? s.startDate ?? '',
-        shareholderNzbn: s.shareholder?.nzbn ?? undefined,
-      }));
+      const shareholders = shareAllocations.flatMap((alloc: any) =>
+        (alloc.shareholder || []).map((s: any) => {
+          const isIndividual = !!s.individualShareholder;
+          const name = isIndividual
+            ? `${s.individualShareholder.firstName} ${s.individualShareholder.lastName}`.trim()
+            : s.otherShareholder?.name || '';
+          return {
+            shareholderName: name,
+            shareholderType: isIndividual ? 'Individual' : 'Company',
+            numberOfShares: alloc.allocation,
+            totalShares,
+            allocationDate: s.appointmentDate || '',
+            shareholderNzbn: s.otherShareholder?.nzbn || undefined,
+          };
+        })
+      );
 
       const directors = (d.roles || [])
-        .filter((r: any) => r.roleType === 'DIRECTOR' || r.roleType === 'Director')
+        .filter((r: any) => r.roleType === 'Director' && r.roleStatus === 'ACTIVE')
         .map((r: any) => ({
-          directorNumber: r.roleId ?? r.entityId ?? '',
-          fullName: r.roleName ?? `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim(),
+          directorNumber: r.uniqueIdentifier ?? '',
+          fullName: `${r.rolePerson?.firstName || ''} ${r.rolePerson?.lastName || ''}`.trim(),
           appointmentDate: r.startDate ?? '',
-          residentialAddress: r.address ?? undefined,
+          residentialAddress: r.roleAddress?.[0]
+            ? [r.roleAddress[0].address1, r.roleAddress[0].address3, r.roleAddress[0].postCode].filter(Boolean).join(', ')
+            : undefined,
         }));
 
       res.json({
