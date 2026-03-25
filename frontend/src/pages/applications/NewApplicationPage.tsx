@@ -446,8 +446,28 @@ const NewApplicationPage = () => {
     }
   };
 
+  // FATF high-risk jurisdictions (call for action + increased monitoring)
+  const FATF_HIGH_RISK = new Set([
+    'MM','IR','KP', // Call for action: Myanmar, Iran, North Korea
+    'AF','BB','BF','CM','CD','HT','JM','ML','MZ','NA','NG','PH','SN','ZA','SY','TZ','TT','UG','AE','VN','YE', // Increased monitoring
+  ]);
+
   // Determine CDD level
   const determineCDDLevel = async (entity: Entity) => {
+    // Enhanced CDD trigger evaluation
+    const country = entity.countryOfIncorporation || 'NZ';
+    const isHighRiskJurisdiction = FATF_HIGH_RISK.has(country);
+
+    const hasNominee = nzbnData.shareholders.some(s =>
+      /nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+    );
+
+    const hasCompanyShareholder = nzbnData.shareholders.some(s => s.shareholderType === 'Company');
+    const companyShareholderCount = nzbnData.shareholders.filter(s => s.shareholderType === 'Company').length;
+    const isComplexOwnership = companyShareholderCount > 2;
+
+    const hasPEP = beneficialOwners.some(bo => bo.pepStatus && bo.pepStatus !== 'NOT_PEP');
+
     const determination: CDDDetermination = {
       level: 'STANDARD',
       reason: 'Entity does not meet Simplified CDD criteria',
@@ -460,10 +480,10 @@ const NewApplicationPage = () => {
         { criteria: 'NZ government department', met: entity.entityType === 'NZ_GOVT_DEPARTMENT' },
       ],
       enhancedTriggers: [
-        { trigger: 'High-risk jurisdiction', triggered: false, reference: 'Section 22(1)(a)' },
-        { trigger: 'Complex ownership structure', triggered: false, reference: 'RBNZ Guideline' },
-        { trigger: 'PEP involvement', triggered: false, reference: 'Section 22(1)(d)' },
-        { trigger: 'Nominee arrangements', triggered: false, reference: 'Regulation 12' },
+        { trigger: 'High-risk jurisdiction', triggered: isHighRiskJurisdiction, reference: 'Section 22(1)(a)' },
+        { trigger: 'Complex ownership structure', triggered: isComplexOwnership, reference: 'RBNZ Guideline' },
+        { trigger: 'PEP involvement', triggered: hasPEP, reference: 'Section 22(1)(d)' },
+        { trigger: 'Nominee arrangements', triggered: hasNominee, reference: 'Regulation 12' },
       ],
     };
 
@@ -473,6 +493,7 @@ const NewApplicationPage = () => {
       determination.legalReferences = ['Section 18, AML/CFT Act 2009'];
     }
 
+    // Enhanced CDD overrides Simplified
     if (determination.enhancedTriggers.some(t => t.triggered)) {
       determination.level = 'ENHANCED';
       determination.reason = determination.enhancedTriggers.filter(t => t.triggered).map(t => t.trigger).join('; ');
