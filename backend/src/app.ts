@@ -112,6 +112,7 @@ export function createApp(): Express {
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/applications', applicationRoutes);
   app.use('/api/v1/applications', cddRoutes); // CDD determination routes nested under applications
+  app.use('/api/v1/cdd', cddRoutes); // Standalone CDD endpoints e.g. /mandatory-document-types
   app.use('/api/v1/entities', entityRoutes);
   app.use('/api/v1/beneficial-owners', beneficialOwnerRoutes);
   app.use('/api/v1/persons-acting', personActingRoutes);
