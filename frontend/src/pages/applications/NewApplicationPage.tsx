@@ -1323,6 +1323,10 @@ const NewApplicationPage = () => {
                   <MenuItem value="INTERNATIONAL_ORG_PEP">International Organisation PEP</MenuItem>
                 </Select>
               </FormControl>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                PEP status must be determined manually using your organisation's screening tool (e.g. World-Check).
+                Automated PEP screening integration is pending. Selecting any PEP status will trigger Enhanced CDD.
+              </Typography>
             </Grid>
 
             <Grid size={{ xs: 12 }}>
@@ -1605,6 +1609,10 @@ const NewApplicationPage = () => {
                   <MenuItem value="INTERNATIONAL_ORG_PEP">International Organisation PEP</MenuItem>
                 </Select>
               </FormControl>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                PEP status must be determined manually using your organisation's screening tool (e.g. World-Check).
+                Automated PEP screening integration is pending.
+              </Typography>
             </Grid>
           </Grid>
         </DialogContent>
