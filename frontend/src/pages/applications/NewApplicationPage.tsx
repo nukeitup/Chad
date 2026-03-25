@@ -1410,11 +1410,13 @@ const NewApplicationPage = () => {
       </Typography>
 
       {cddDetermination?.level === 'SIMPLIFIED' && (
-        <Alert severity="success" sx={{ mb: 2 }}>
-          <Typography variant="subtitle2">Simplified CDD — Capture Authorised Signatory</Typography>
+        <Alert severity="info" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2">Simplified CDD — Directors / Authorised Signatories Required for Account Signing</Typography>
           <Typography variant="body2">
-            For {selectedEntity?.legalName}, add the individual who is authorised to act on behalf of the entity
-            (e.g. the mandate holder or authorised officer). No director verification is required.
+            Although full AML verification is not required under Simplified CDD, you must still capture all directors
+            and authorised signatories as they are required to sign the account opening forms.
+            {['NZ_LOCAL_AUTHORITY', 'NZ_GOVT_DEPARTMENT', 'NZ_PUBLIC_SERVICE_AGENCY', 'NZ_STATE_ENTERPRISE'].includes(selectedEntity?.entityType || '') &&
+              ' Note: NZBN does not list councillors or officers for this entity type — please add them manually.'}
           </Typography>
         </Alert>
       )}
