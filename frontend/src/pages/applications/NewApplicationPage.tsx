@@ -351,22 +351,27 @@ const NewApplicationPage = () => {
     try {
       // First, get/create entity in our database
       const entityResponse = await api.get(`/entities/nzbn/${nzbn}`);
-      if (entityResponse.data.success) {
-        setSelectedEntity(entityResponse.data.data.entity);
-        console.log('Selected Entity after NZBN selection:', entityResponse.data.data.entity);
-        await determineCDDLevel(entityResponse.data.data.entity);
+      const entity = entityResponse.data.success ? entityResponse.data.data.entity : null;
+      if (entity) {
+        setSelectedEntity(entity);
       }
 
       // Then, fetch full NZBN details including shareholders and directors
       const nzbnResponse = await nzbnApi.getByNzbn(nzbn);
       if (nzbnResponse.data.success && nzbnResponse.data.data) {
         const nzbnDetails = nzbnResponse.data.data;
+        const shareholders = nzbnDetails.shareholders || [];
 
         // Store NZBN data for later import
         setNzbnData({
-          shareholders: nzbnDetails.shareholders || [],
+          shareholders,
           directors: nzbnDetails.directors || [],
         });
+
+        // Determine CDD level now that shareholders are available
+        if (entity) {
+          await determineCDDLevel(entity, shareholders);
+        }
 
         // Auto-populate beneficial owners from shareholders with >25% ownership
         const totalShares = nzbnDetails.shareholders?.reduce(
@@ -453,18 +458,19 @@ const NewApplicationPage = () => {
   ]);
 
   // Determine CDD level
-  const determineCDDLevel = async (entity: Entity) => {
+  // shareholders param allows passing fresh data before nzbnData state has updated
+  const determineCDDLevel = async (entity: Entity, shareholders = nzbnData.shareholders) => {
     // Enhanced CDD trigger evaluation
     const country = entity.countryOfIncorporation || 'NZ';
     const isHighRiskJurisdiction = FATF_HIGH_RISK.has(country);
 
-    const hasNominee = nzbnData.shareholders.some(s =>
+    const hasNominee = shareholders.some(s =>
       /nominee|nominees|custodian|custodians/i.test(s.shareholderName)
     );
 
     // Complex ownership: 3+ non-nominee corporate shareholders indicates multi-layer structure
     // Nominees are assessed separately via their own Enhanced CDD trigger
-    const nonNomineeCompanyShareholders = nzbnData.shareholders.filter(
+    const nonNomineeCompanyShareholders = shareholders.filter(
       s => s.shareholderType === 'Company' && !/nominee|nominees|custodian|custodians/i.test(s.shareholderName)
     );
     const isComplexOwnership = nonNomineeCompanyShareholders.length > 2;
