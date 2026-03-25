@@ -1125,12 +1125,25 @@ const NewApplicationPage = () => {
         Step 3 of 7: Beneficial Ownership
       </Typography>
 
-      <Alert severity="info" sx={{ mb: 3 }}>
-        <Typography variant="body2">
-          <strong>Section 15, AML/CFT Act 2009:</strong> You must identify all individuals who own more than 25% of the entity,
-          have effective control, or are persons on whose behalf the transaction is conducted.
-        </Typography>
-      </Alert>
+      {cddDetermination?.level === 'SIMPLIFIED' ? (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <Typography variant="subtitle2">Simplified CDD — Beneficial Ownership Identification Not Required</Typography>
+          <Typography variant="body2">
+            {selectedEntity?.legalName} qualifies for Simplified CDD under Section 18, AML/CFT Act 2009.
+            Private beneficial ownership identification is not required for this entity type.
+            {['NZ_LOCAL_AUTHORITY', 'NZ_GOVT_DEPARTMENT', 'NZ_PUBLIC_SERVICE_AGENCY', 'NZ_STATE_ENTERPRISE'].includes(selectedEntity?.entityType || '') &&
+              ' Ownership is vested in the Crown or the public — there are no private shareholders or directors to identify.'}
+            {' '}Please proceed to capture the authorised signatory as a Person Acting on behalf of the entity in the next step.
+          </Typography>
+        </Alert>
+      ) : (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Section 15, AML/CFT Act 2009:</strong> You must identify all individuals who own more than 25% of the entity,
+            have effective control, or are persons on whose behalf the transaction is conducted.
+          </Typography>
+        </Alert>
+      )}
 
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -1395,6 +1408,16 @@ const NewApplicationPage = () => {
       <Typography variant="h6" gutterBottom>
         Step 4 of 7: Directors
       </Typography>
+
+      {cddDetermination?.level === 'SIMPLIFIED' && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          <Typography variant="subtitle2">Simplified CDD — Capture Authorised Signatory</Typography>
+          <Typography variant="body2">
+            For {selectedEntity?.legalName}, add the individual who is authorised to act on behalf of the entity
+            (e.g. the mandate holder or authorised officer). No director verification is required.
+          </Typography>
+        </Alert>
+      )}
 
       <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="body2">
@@ -1918,23 +1941,34 @@ const NewApplicationPage = () => {
       </Accordion>
 
       {/* Org Chart */}
-      {nzbnData && nzbnData.shareholders.length > 0 && (
-        <Accordion defaultExpanded>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AccountTreeIcon color="primary" />
-              <Typography fontWeight={600}>Ownership Structure (Org Chart)</Typography>
-            </Box>
-          </AccordionSummary>
-          <AccordionDetails>
+      <Accordion defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AccountTreeIcon color="primary" />
+            <Typography fontWeight={600}>Ownership Structure (Org Chart)</Typography>
+          </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          {nzbnData && nzbnData.shareholders.length > 0 ? (
             <OrgChartPanel
               entityName={selectedEntity?.legalName || ''}
               entityCountry={selectedEntity?.countryOfIncorporation || 'NZ'}
               shareholders={toOrgChartShareholders(nzbnData.shareholders)}
             />
-          </AccordionDetails>
-        </Accordion>
-      )}
+          ) : (
+            <Alert severity="info" icon={<InfoIcon />}>
+              <Typography variant="subtitle2">No shareholder structure applicable</Typography>
+              <Typography variant="body2">
+                {['NZ_LOCAL_AUTHORITY', 'NZ_GOVT_DEPARTMENT', 'NZ_PUBLIC_SERVICE_AGENCY', 'NZ_STATE_ENTERPRISE'].includes(selectedEntity?.entityType || '')
+                  ? `${selectedEntity?.legalName} is a ${selectedEntity?.entityType?.replace(/_/g, ' ')} — ownership is vested in the Crown or the public, not private shareholders. No ownership chart is required.`
+                  : selectedEntity?.isListedIssuer
+                  ? 'This entity is a listed issuer with extensive shareholding. Shareholder data is not available via the NZBN register.'
+                  : 'No shareholder data was returned from the NZBN register for this entity.'}
+              </Typography>
+            </Alert>
+          )}
+        </AccordionDetails>
+      </Accordion>
 
       {/* Compliance Checklist */}
       <Paper variant="outlined" sx={{ p: 3, mt: 3, bgcolor: 'background.default' }}>
