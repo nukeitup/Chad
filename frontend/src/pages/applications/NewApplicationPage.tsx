@@ -529,17 +529,25 @@ const NewApplicationPage = () => {
       totalScore += 8;
     }
 
-    // Ownership complexity
-    if (beneficialOwners.length > 4) {
-      factors.push({ category: 'Entity', description: 'Complex ownership structure', points: 15 });
+    // Ownership complexity — use shareholder data consistent with CDD determination
+    const nonNomineeCos = nzbnData.shareholders.filter(
+      s => s.shareholderType === 'Company' && !/nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+    );
+    const hasAnyCorporateShareholder = nonNomineeCos.length > 0;
+    if (nonNomineeCos.length > 2) {
+      factors.push({ category: 'Entity', description: 'Complex ownership: 3+ corporate shareholders', points: 15 });
       totalScore += 15;
-    } else if (beneficialOwners.length > 2) {
-      factors.push({ category: 'Entity', description: 'Moderate ownership complexity', points: 8 });
+    } else if (hasAnyCorporateShareholder) {
+      factors.push({ category: 'Entity', description: 'Corporate shareholder present (multi-layer ownership)', points: 8 });
       totalScore += 8;
     }
 
     // Geographic risk factors (0-35 points)
-    if (selectedEntity?.countryOfIncorporation && selectedEntity.countryOfIncorporation !== 'NZ') {
+    const country = selectedEntity?.countryOfIncorporation || 'NZ';
+    if (FATF_HIGH_RISK.has(country)) {
+      factors.push({ category: 'Geographic', description: 'FATF high-risk jurisdiction', points: 35 });
+      totalScore += 35;
+    } else if (country !== 'NZ') {
       factors.push({ category: 'Geographic', description: 'Overseas entity incorporation', points: 15 });
       totalScore += 15;
     }
@@ -551,18 +559,26 @@ const NewApplicationPage = () => {
       totalScore += 18;
     }
 
-    const hasNominee = beneficialOwners.some(bo => bo.isNominee);
-    if (hasNominee) {
+    const hasNomineeShareholderInData = nzbnData.shareholders.some(s =>
+      /nominee|nominees|custodian|custodians/i.test(s.shareholderName)
+    );
+    if (hasNomineeShareholderInData) {
       factors.push({ category: 'Beneficial Owners', description: 'Nominee arrangements present', points: 12 });
       totalScore += 12;
     }
 
-    // Determine rating (adjusted thresholds)
+    // Determine rating (thresholds: LOW 0-35, MEDIUM 36-60, HIGH 61+)
     let rating: RiskRating = 'LOW';
     if (totalScore >= 61) {
       rating = 'HIGH';
     } else if (totalScore >= 36) {
       rating = 'MEDIUM';
+    }
+
+    // Floor: Enhanced CDD must be at least MEDIUM risk
+    if (cddDetermination?.level === 'ENHANCED' && rating === 'LOW') {
+      rating = 'MEDIUM';
+      factors.push({ category: 'CDD Level', description: 'Enhanced CDD triggered — minimum MEDIUM risk', points: 0 });
     }
 
     setRiskAssessment({ rating, score: totalScore, factors });
@@ -573,7 +589,7 @@ const NewApplicationPage = () => {
     if (activeStep >= 4 && selectedEntity) {
       calculateRiskAssessment();
     }
-  }, [activeStep, beneficialOwners, selectedEntity]);
+  }, [activeStep, beneficialOwners, selectedEntity, cddDetermination, nzbnData]);
 
   // Fetch mandatory document types when CDD level is determined
   useEffect(() => {
