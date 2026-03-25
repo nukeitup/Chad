@@ -10,8 +10,10 @@
  * the appropriate Customer Due Diligence level.
  */
 
+import { Entity, BeneficialOwner, Person, CDDLevel } from '../generated/prisma';
 import { config } from '../config';
 import { DOCUMENT_TYPES } from '../routes/reference.routes';
+import { mockDataService } from './mock-data.service';
 
 // ============================================================
 // TYPE DEFINITIONS
