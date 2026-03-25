@@ -212,16 +212,23 @@ router.get(
     }
 
 
-    const createdOrUpdatedEntity = await prisma.entity.upsert({
-      where: { nzbn: nzbn },
-      update: entityToSave,
-      create: entityToSave,
-    });
+    let createdOrUpdatedEntity;
+    try {
+      createdOrUpdatedEntity = await prisma.entity.upsert({
+        where: { nzbn: nzbn },
+        update: entityToSave,
+        create: entityToSave,
+      });
+    } catch (dbError: any) {
+      console.error('Prisma upsert error:', dbError?.message);
+      console.error('entityToSave:', JSON.stringify(entityToSave));
+      throw new ApiError(`Database error: ${dbError?.message}`, 500);
+    }
 
     res.json({
       success: true,
       data: {
-        entity: createdOrUpdatedEntity, // This entity will always have an 'id'
+        entity: createdOrUpdatedEntity,
         source: config.testMode ? 'mock_data' : 'nzbn_api_to_db',
       },
       message: 'Entity retrieved and stored/updated in database',
