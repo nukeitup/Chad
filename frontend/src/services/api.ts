@@ -80,6 +80,9 @@ export const applicationsApi = {
   delete: (id: string) =>
     api.delete(`/applications/${id}`),
 
+  deleteAll: () =>
+    api.delete('/applications'),
+
   submit: (id: string) =>
     api.post(`/applications/${id}/submit`),
 

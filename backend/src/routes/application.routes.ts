@@ -321,6 +321,34 @@ router.put(
 );
 
 /**
+ * DELETE /api/v1/applications
+ * Delete ALL applications (admin only - for demo reset)
+ */
+router.delete(
+  '/',
+  authenticate,
+  authorize('ADMIN'),
+  asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const count = await prisma.cDDApplication.count();
+
+    await prisma.cDDApplication.deleteMany({});
+
+    await auditService.log({
+      userId: req.user!.id,
+      actionType: 'DELETE_APPLICATION',
+      tableAffected: 'CDDApplication',
+      recordIdAffected: 'ALL',
+      newValue: { deletedCount: count },
+    });
+
+    res.json({
+      success: true,
+      message: `${count} application(s) deleted successfully`,
+    });
+  })
+);
+
+/**
  * DELETE /api/v1/applications/:id
  * Delete a draft application
  */

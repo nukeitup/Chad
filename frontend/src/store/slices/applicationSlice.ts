@@ -151,6 +151,18 @@ export const rejectApplication = createAsyncThunk(
   }
 );
 
+export const deleteAllApplications = createAsyncThunk(
+  'applications/deleteAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      await applicationsApi.deleteAll();
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      return rejectWithValue(err.response?.data?.error || 'Failed to delete all applications');
+    }
+  }
+);
+
 export const deleteApplication = createAsyncThunk(
   'applications/delete',
   async (id: string, { rejectWithValue }) => {
@@ -261,6 +273,13 @@ const applicationSlice = createSlice({
       if (index !== -1) {
         state.applications[index] = action.payload;
       }
+    });
+
+    // Delete all
+    builder.addCase(deleteAllApplications.fulfilled, (state) => {
+      state.applications = [];
+      state.pagination.total = 0;
+      state.pagination.totalPages = 0;
     });
 
     // Delete

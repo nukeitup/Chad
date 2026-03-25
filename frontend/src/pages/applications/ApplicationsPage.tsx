@@ -44,7 +44,8 @@ import {
 } from '@mui/icons-material';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { fetchApplications, setFilters, deleteApplication } from '../../store/slices/applicationSlice';
+import { fetchApplications, setFilters, deleteApplication, deleteAllApplications } from '../../store/slices/applicationSlice';
+import { useAuth } from '../../hooks/useAuth';
 import { format } from 'date-fns';
 import { CDDApplication, WorkflowState, RiskRating, CDDLevel } from '../../types';
 
@@ -82,6 +83,7 @@ const getCDDLevelColor = (level: CDDLevel) => {
 const ApplicationsPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
+  const { isAdmin } = useAuth();
   const { applications, isLoading, error, pagination, filters } = useSelector(
     (state: RootState) => state.applications
   );
@@ -93,6 +95,9 @@ const ApplicationsPage = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteAllDialogOpen, setDeleteAllDialogOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [deleteAllError, setDeleteAllError] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(
@@ -173,6 +178,19 @@ const ApplicationsPage = () => {
     setDeleteError(null);
   };
 
+  const handleDeleteAllConfirm = async () => {
+    setIsDeletingAll(true);
+    setDeleteAllError(null);
+    try {
+      await dispatch(deleteAllApplications()).unwrap();
+      setDeleteAllDialogOpen(false);
+    } catch (err: any) {
+      setDeleteAllError(err || 'Failed to delete all applications');
+    } finally {
+      setIsDeletingAll(false);
+    }
+  };
+
   const filteredApplications = applications.filter(
     (app: CDDApplication) =>
       app.applicationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -185,13 +203,25 @@ const ApplicationsPage = () => {
         <Typography variant="h4" fontWeight={700}>
           Applications
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => navigate('/applications/new')}
-        >
-          New Application
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {isAdmin && (
+            <Button
+              variant="outlined"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={() => setDeleteAllDialogOpen(true)}
+            >
+              Delete All
+            </Button>
+          )}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => navigate('/applications/new')}
+          >
+            New Application
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -426,6 +456,32 @@ const ApplicationsPage = () => {
           Delete
         </MenuItem>
       </Menu>
+
+      {/* Delete All Confirmation Dialog */}
+      <Dialog open={deleteAllDialogOpen} onClose={() => setDeleteAllDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete All Applications</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This will permanently delete <strong>all {pagination.total} application(s)</strong>. This action cannot be undone.
+          </DialogContentText>
+          {deleteAllError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {deleteAllError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteAllDialogOpen(false)} disabled={isDeletingAll}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleDeleteAllConfirm}
+            disabled={isDeletingAll}
+          >
+            {isDeletingAll ? <CircularProgress size={20} /> : 'Delete All'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} maxWidth="xs" fullWidth>
