@@ -167,9 +167,10 @@ router.get(
       'UNLIM':      'NZ_COMPANY',
       'COOP':       'NZ_COMPANY',
       'LP':         'NZ_LIMITED_PARTNERSHIP',
-      'GovtLocal':  'NZ_LOCAL_AUTHORITY',
-      'GOVT':       'NZ_GOVT_DEPARTMENT',
-      'SOE':        'NZ_STATE_ENTERPRISE',
+      'GovtLocal':    'NZ_LOCAL_AUTHORITY',
+      'GovtCentral':  'NZ_GOVT_DEPARTMENT',
+      'GOVT':         'NZ_GOVT_DEPARTMENT',
+      'SOE':          'NZ_STATE_ENTERPRISE',
       'T':          'TRUST',
       'FGNS':       'OVERSEAS_COMPANY',
       'I':          'NZ_COMPANY', // Incorporated Society — closest match
