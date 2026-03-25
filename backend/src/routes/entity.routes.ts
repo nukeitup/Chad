@@ -155,6 +155,9 @@ router.get(
 
         const data = await response.json();
         console.log('NZBN entity raw response:', JSON.stringify(data, null, 2));
+        // DEBUG: return raw response so we can inspect v5 field names
+        res.json({ success: true, debug: true, data });
+        return;
         externalEntityData = data;
       } catch (error) {
         if (error instanceof ApiError) throw error;
