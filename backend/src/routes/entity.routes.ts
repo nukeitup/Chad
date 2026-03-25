@@ -175,7 +175,19 @@ router.get(
       'FGNS':       'OVERSEAS_COMPANY',
       'I':          'NZ_COMPANY', // Incorporated Society — closest match
     };
-    const resolvedEntityType = entityTypeCodeMap[externalEntityData.entityTypeCode] || 'NZ_COMPANY';
+    let resolvedEntityType = entityTypeCodeMap[externalEntityData.entityTypeCode] || 'NZ_COMPANY';
+
+    // Detect SOEs: LTD companies where all shareholders are Ministers of the Crown
+    if (resolvedEntityType === 'NZ_COMPANY') {
+      const shareAllocations = externalEntityData['company-details']?.shareholding?.shareAllocation || [];
+      const allShareholders = shareAllocations.flatMap((a: any) => a.shareholder || []);
+      if (allShareholders.length > 0 && allShareholders.every((s: any) => {
+        const name = (s.individualShareholder?.fullName || s.otherShareholder?.currentEntityName || '').toLowerCase();
+        return name.includes('minister');
+      })) {
+        resolvedEntityType = 'NZ_STATE_ENTERPRISE';
+      }
+    }
 
     // Map entityStatusCode to internal EntityStatus enum
     const entityStatusCodeMap: Record<string, string> = {
