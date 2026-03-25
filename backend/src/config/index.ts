@@ -22,7 +22,7 @@ export const config = {
 
   // NZBN API
   nzbn: {
-    apiUrl: process.env.NZBN_API_URL || 'https://api.business.govt.nz/services/v4',
+    apiUrl: process.env.NZBN_API_URL || 'https://api.business.govt.nz/gateway/nzbn/v5',
     apiKey: process.env.NZBN_API_KEY || '',
   },
 
