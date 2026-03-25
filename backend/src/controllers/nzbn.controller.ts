@@ -132,7 +132,7 @@ export const getEntityByNzbn = asyncHandler(
           const isIndividual = !!s.individualShareholder;
           const name = isIndividual
             ? `${s.individualShareholder.firstName} ${s.individualShareholder.lastName}`.trim()
-            : s.otherShareholder?.name || '';
+            : s.otherShareholder?.currentEntityName || '';
           return {
             shareholderName: name,
             shareholderType: isIndividual ? 'Individual' : 'Company',
