@@ -122,18 +122,52 @@ export const getEntityByNzbn = asyncHandler(
         },
       });
 
+      const d = response.data;
+
+      // Map NZBN API v5 response to the shape the frontend expects
+      const shareholders = (d.shareAllocations || []).map((s: any) => ({
+        shareholderName: s.shareholder?.name || s.name || '',
+        shareholderType: s.shareholder?.shareholderType === 'INDIVIDUAL' ? 'Individual' : 'Company',
+        numberOfShares: s.shares ?? s.numberOfShares ?? 0,
+        totalShares: s.totalShares ?? undefined,
+        allocationDate: s.allocationDate ?? s.startDate ?? '',
+        shareholderNzbn: s.shareholder?.nzbn ?? undefined,
+      }));
+
+      const directors = (d.roles || [])
+        .filter((r: any) => r.roleType === 'DIRECTOR' || r.roleType === 'Director')
+        .map((r: any) => ({
+          directorNumber: r.roleId ?? r.entityId ?? '',
+          fullName: r.roleName ?? `${r.firstName ?? ''} ${r.lastName ?? ''}`.trim(),
+          appointmentDate: r.startDate ?? '',
+          residentialAddress: r.address ?? undefined,
+        }));
+
       res.json({
         success: true,
-        data: response.data,
+        data: {
+          nzbn: d.nzbn,
+          entityName: d.entityName,
+          tradingName: d.tradingName,
+          entityTypeCode: d.entityTypeCode,
+          entityTypeName: d.entityTypeName,
+          entityStatusCode: d.entityStatusCode,
+          entityStatusDescription: d.entityStatusDescription,
+          registrationDate: d.registrationDate,
+          addresses: d.addresses,
+          shareholders,
+          directors,
+        },
       });
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 404) {
           throw new ApiError('Entity not found.', 404);
         }
-        console.error('NZBN API Error:', error.response?.data);
+        console.error('NZBN API Error status:', error.response?.status);
+        console.error('NZBN API Error data:', JSON.stringify(error.response?.data));
         throw new ApiError(
-          'Failed to fetch data from NZBN API.',
+          `NZBN API error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`,
           error.response?.status || 500
         );
       }
