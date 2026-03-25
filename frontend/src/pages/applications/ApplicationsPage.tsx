@@ -308,7 +308,7 @@ const ApplicationsPage = () => {
 
       {/* Applications Table */}
       <Card>
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ minHeight: 400 }}>
           {isLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
               <CircularProgress />
