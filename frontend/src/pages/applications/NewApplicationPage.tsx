@@ -421,6 +421,48 @@ const NewApplicationPage = () => {
 
         setBeneficialOwners(autoPopulatedBOs);
         setPersonsActing(autoPopulatedPAs);
+
+        // Auto-generate Company Extract from Companies Office data
+        const extractContent = [
+          `COMPANY EXTRACT - NZ Companies Office`,
+          `Generated: ${new Date().toLocaleDateString('en-NZ')}`,
+          `Source: New Zealand Business Number (NZBN) Register`,
+          ``,
+          `COMPANY DETAILS`,
+          `Entity Name: ${nzbnDetails.entityName || ''}`,
+          `NZBN: ${nzbnDetails.nzbn || nzbn}`,
+          `Entity Type: ${nzbnDetails.entityTypeName || ''}`,
+          `Status: ${nzbnDetails.entityStatusDescription || nzbnDetails.entityStatusCode || ''}`,
+          `Registration Date: ${nzbnDetails.registrationDate || ''}`,
+          nzbnDetails.tradingName ? `Trading Name: ${nzbnDetails.tradingName}` : '',
+          nzbnDetails.anzsicDescription ? `Industry (ANZSIC): ${nzbnDetails.anzsicDescription}` : '',
+          ``,
+          `DIRECTORS`,
+          ...(nzbnDetails.directors || []).map((d: any) =>
+            `  - ${d.fullName} (Appointed: ${d.appointmentDate || 'N/A'})`
+          ),
+          ``,
+          `SHAREHOLDERS`,
+          ...(nzbnDetails.shareholders || []).map((s: any) =>
+            `  - ${s.shareholderName} — ${s.numberOfShares} shares`
+          ),
+          ``,
+          `ADDRESSES`,
+          ...(nzbnDetails.addresses || []).map((a: any) =>
+            `  ${a.addressType || ''}: ${[a.address1, a.address2, a.city, a.postCode].filter(Boolean).join(', ')}`
+          ),
+        ].filter(line => line !== '').join('\n');
+
+        const extractBlob = new Blob([extractContent], { type: 'text/plain' });
+        const extractFile = new File([extractBlob], `Company_Extract_${nzbnDetails.entityName || nzbn}.txt`, { type: 'text/plain' });
+        setDocuments([{
+          id: `doc-extract-${Date.now()}`,
+          file: extractFile,
+          documentType: 'Company Extract',
+          documentCategory: 'ENTITY_IDENTIFICATION',
+          uploading: false,
+          uploaded: true,
+        }]);
       }
 
       setActiveStep(1);
@@ -759,20 +801,6 @@ const NewApplicationPage = () => {
         return;
       }
     }
-    // Check if all required documents are uploaded (excluding Company Extract for NZ entities if automatically provided)
-    const missingDocs = dynamicRequiredDocuments.filter(docType => {
-      if (docType === 'Company Extract' && selectedEntity?.countryOfIncorporation === 'NZ') {
-        return false; // Automatically provided for NZ entities
-      }
-      return !documents.some(d => d.documentType === docType && d.uploaded);
-    });
-
-    if (missingDocs.length > 0) {
-      setError(`Missing required documents: ${missingDocs.join(', ')}.`);
-      return;
-    }
-
-
     setIsSaving(true);
     setError(null);
 
