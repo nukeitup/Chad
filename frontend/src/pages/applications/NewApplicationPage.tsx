@@ -560,7 +560,7 @@ const NewApplicationPage = () => {
     setCddDetermination(determination);
   };
 
-  // Calculate risk assessment based on public data only
+  // Calculate risk assessment based on public data only — returns result and also updates state
   const calculateRiskAssessment = () => {
     const factors: { category: string; description: string; points: number }[] = [];
     let totalScore = 0;
@@ -629,7 +629,9 @@ const NewApplicationPage = () => {
       factors.push({ category: 'CDD Level', description: 'Enhanced CDD triggered — minimum MEDIUM risk', points: 0 });
     }
 
-    setRiskAssessment({ rating, score: totalScore, factors });
+    const result = { rating, score: totalScore, factors };
+    setRiskAssessment(result);
+    return result;
   };
 
   // Run risk calculation when relevant data changes
@@ -835,10 +837,11 @@ const NewApplicationPage = () => {
           }
         }
 
-        // Update with risk assessment data
+        // Update with risk assessment data — calculate now if not already done
+        const risk = riskAssessment ?? calculateRiskAssessment();
         await applicationsApi.update(appId, {
-          riskRating: riskAssessment?.rating,
-          riskScore: riskAssessment?.score,
+          riskRating: risk?.rating,
+          riskScore: risk?.score,
         });
 
         // Submit for approval
