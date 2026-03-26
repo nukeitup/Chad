@@ -952,14 +952,19 @@ const NewApplicationPage = () => {
                         <Typography variant="subtitle1" fontWeight={600}>
                           {result.entityName}
                         </Typography>
+                        {(result.tradingNames?.[0]?.name) && (
+                          <Typography variant="body2" color="text.secondary">
+                            Trading as: {result.tradingNames[0].name}
+                          </Typography>
+                        )}
                         <Typography variant="body2" color="text.secondary">
-                          Type: {result.entityTypeName}
+                          Type: {result.entityTypeDescription || result.entityTypeName}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Status: {result.entityStatusDescription}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Company Number (NZBN): {result.nzbn}
+                          NZBN: {result.nzbn}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2 }}>

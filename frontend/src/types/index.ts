@@ -262,7 +262,9 @@ export interface ApplicationStats {
 export interface NZBNSearchResult {
   nzbn: string;
   entityName: string;
-  entityTypeName: string;
+  entityTypeDescription: string;  // NZBN API v5 field name
+  entityTypeName?: string;         // legacy alias — may be undefined
   entityStatusDescription: string;
   registrationDate?: string;
+  tradingNames?: { name: string }[];
 }
