@@ -97,8 +97,10 @@ export const errorHandler = (
     response.message = details;
   }
 
-  // Include error details for debugging (temporary)
-  (response as any).debug = err.message;
+  // Include stack trace in development
+  if (config.nodeEnv === 'development' && err.stack) {
+    (response as ApiResponse & { stack?: string }).stack = err.stack;
+  }
 
   res.status(statusCode).json(response);
 };
