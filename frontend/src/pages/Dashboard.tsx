@@ -136,7 +136,7 @@ const Dashboard = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       {/* Welcome Section */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" fontWeight={700} gutterBottom>

@@ -198,7 +198,7 @@ const ApplicationsPage = () => {
   );
 
   return (
-    <Box>
+    <Box sx={{ width: '100%' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" fontWeight={700}>
           Applications
