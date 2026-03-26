@@ -1744,7 +1744,7 @@ const NewApplicationPage = () => {
           {dynamicRequiredDocuments.map((docType, index) => {
             const uploadedDoc = documents.find(d => d.documentType === docType);
             return (
-              <ListItem key={index} divider={index < requiredDocuments.length - 1}>
+              <ListItem key={index} divider={index < dynamicRequiredDocuments.length - 1}>
                 <ListItemIcon>
                   {uploadedDoc ? (
                     <CheckIcon color="success" />
