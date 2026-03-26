@@ -344,7 +344,7 @@ const NewApplicationPage = () => {
   };
 
   // Select an NZ entity
-  const handleSelectNZEntity = async (nzbn: string) => {
+  const handleSelectNZEntity = async (nzbn: string, searchResult?: NZBNSearchResult, _retry = false) => {
     setIsLoading(true);
     setError(null);
 
@@ -481,10 +481,33 @@ const NewApplicationPage = () => {
           }]);
         }
       } catch {
-        // NZBN detail fetch failed — proceed without auto-populated data
+        // NZBN detail fetch failed — fall back to search result data if available
+        if (!entity && searchResult) {
+          entity = {
+            id: nzbn,
+            nzbn,
+            legalName: searchResult.entityName,
+            tradingName: searchResult.tradingNames?.[0]?.name || null,
+            entityType: 'NZ_COMPANY',
+            entityStatus: 'ACTIVE',
+            countryOfIncorporation: 'NZ',
+            isListedIssuer: false,
+          } as unknown as Entity;
+          setSelectedEntity(entity);
+        }
         if (entity) {
           await determineCDDLevel(entity);
         }
+      }
+
+      if (!entity) {
+        if (!_retry) {
+          // Cold start: backend may need a moment to wake up — retry once automatically
+          await new Promise(r => setTimeout(r, 2000));
+          return handleSelectNZEntity(nzbn, searchResult, true);
+        }
+        setError('Could not load entity details. Please try selecting the entity again.');
+        return;
       }
 
       setActiveStep(1);
@@ -961,7 +984,7 @@ const NewApplicationPage = () => {
                       cursor: 'pointer',
                       '&:hover': { bgcolor: 'action.hover' },
                     }}
-                    onClick={() => handleSelectNZEntity(result.nzbn)}
+                    onClick={() => handleSelectNZEntity(result.nzbn, result)}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Box>
@@ -985,7 +1008,7 @@ const NewApplicationPage = () => {
                       </Box>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2 }}>
                         <Button variant="contained" size="small"
-                          onClick={(e) => { e.stopPropagation(); handleSelectNZEntity(result.nzbn); }}>
+                          onClick={(e) => { e.stopPropagation(); handleSelectNZEntity(result.nzbn, result); }}>
                           Select
                         </Button>
                         <Button variant="outlined" size="small" startIcon={<AccountTreeIcon />}
