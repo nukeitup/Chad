@@ -77,7 +77,7 @@ router.get(
     // Production: Call actual NZBN API
     try {
       const response = await fetch(
-        `${config.nzbn.apiUrl}/nzbn/entities?search-term=${encodeURIComponent(query)}`,
+        `${config.nzbn.apiUrl}/entities?search-term=${encodeURIComponent(query)}`,
         {
           headers: {
             'Ocp-Apim-Subscription-Key': config.nzbn.apiKey,
@@ -139,7 +139,7 @@ router.get(
     } else {
       // Production: Call actual NZBN API
       try {
-        const response = await fetch(`${config.nzbn.apiUrl}/nzbn/entities/${nzbn}`, {
+        const response = await fetch(`${config.nzbn.apiUrl}/entities/${nzbn}`, {
           headers: {
             'Ocp-Apim-Subscription-Key': config.nzbn.apiKey,
           },
