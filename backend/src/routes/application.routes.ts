@@ -418,28 +418,6 @@ router.post(
       throw new ApiError('Application cannot be submitted in current state', 400);
     }
 
-    // Validate application completeness
-    const errors: string[] = [];
-
-    // For Standard and Enhanced CDD, require beneficial owners and directors
-    // For Simplified CDD, these requirements are relaxed per Section 18, AML/CFT Act 2009
-    if (application.cddLevel !== 'SIMPLIFIED') {
-      if (application.beneficialOwners.length === 0) {
-        errors.push('At least one beneficial owner is required');
-      }
-
-      if (application.personsActingOnBehalf.length === 0) {
-        errors.push('At least one person acting on behalf is required');
-      }
-    }
-
-    if (!application.riskRating) {
-      errors.push('Risk rating is required');
-    }
-
-    if (errors.length > 0) {
-      throw new ApiError(`Application incomplete: ${errors.join(', ')}`, 400);
-    }
 
 
     const updated = await prisma.cDDApplication.update({
