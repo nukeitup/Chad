@@ -357,112 +357,118 @@ const NewApplicationPage = () => {
       }
 
       // Then, fetch full NZBN details including shareholders and directors
-      const nzbnResponse = await nzbnApi.getByNzbn(nzbn);
-      if (nzbnResponse.data.success && nzbnResponse.data.data) {
-        const nzbnDetails = nzbnResponse.data.data;
-        const shareholders = nzbnDetails.shareholders || [];
+      // This is best-effort — if it fails we still proceed with the entity
+      try {
+        const nzbnResponse = await nzbnApi.getByNzbn(nzbn);
+        if (nzbnResponse.data.success && nzbnResponse.data.data) {
+          const nzbnDetails = nzbnResponse.data.data;
+          const shareholders = nzbnDetails.shareholders || [];
 
-        // Store NZBN data for later import
-        setNzbnData({
-          shareholders,
-          directors: nzbnDetails.directors || [],
-        });
+          // Store NZBN data for later import
+          setNzbnData({
+            shareholders,
+            directors: nzbnDetails.directors || [],
+          });
 
-        // Determine CDD level now that shareholders are available
-        if (entity) {
-          await determineCDDLevel(entity, shareholders);
-        }
+          // Determine CDD level now that shareholders are available
+          if (entity) {
+            await determineCDDLevel(entity, shareholders);
+          }
 
-        // Auto-populate beneficial owners from shareholders with >25% ownership
-        const totalShares = nzbnDetails.shareholders?.reduce(
-          (sum: number, s: any) => sum + s.numberOfShares, 0
-        ) || 1;
+          // Auto-populate beneficial owners from shareholders with >25% ownership
+          const totalShares = nzbnDetails.shareholders?.reduce(
+            (sum: number, s: any) => sum + s.numberOfShares, 0
+          ) || 1;
 
-        const autoPopulatedBOs: BeneficialOwnerForm[] = [];
-        const autoPopulatedPAs: PersonActingForm[] = [];
+          const autoPopulatedBOs: BeneficialOwnerForm[] = [];
+          const autoPopulatedPAs: PersonActingForm[] = [];
 
-        // Add shareholders with >25% as beneficial owners
-        for (const shareholder of nzbnDetails.shareholders || []) {
-          const shareholderTotal = shareholder.totalShares || totalShares;
-          const ownershipPct = (shareholder.numberOfShares / shareholderTotal) * 100;
+          for (const shareholder of nzbnDetails.shareholders || []) {
+            const shareholderTotal = shareholder.totalShares || totalShares;
+            const ownershipPct = (shareholder.numberOfShares / shareholderTotal) * 100;
 
-          if (ownershipPct >= 25) {
-            autoPopulatedBOs.push({
-              fullName: shareholder.shareholderName,
+            if (ownershipPct >= 25) {
+              autoPopulatedBOs.push({
+                fullName: shareholder.shareholderName,
+                dateOfBirth: '',
+                residentialStreet: '',
+                residentialCity: '',
+                residentialPostcode: '',
+                residentialCountry: 'New Zealand',
+                nationality: 'New Zealand',
+                ownershipPercentage: Math.round(ownershipPct * 100) / 100,
+                ownershipBasis: ['ULTIMATE_OWNERSHIP'],
+                isNominee: false,
+                pepStatus: 'NOT_PEP',
+              });
+            }
+          }
+
+          for (const director of nzbnDetails.directors || []) {
+            autoPopulatedPAs.push({
+              fullName: director.fullName,
               dateOfBirth: '',
               residentialStreet: '',
               residentialCity: '',
               residentialPostcode: '',
               residentialCountry: 'New Zealand',
               nationality: 'New Zealand',
-              ownershipPercentage: Math.round(ownershipPct * 100) / 100,
-              ownershipBasis: ['ULTIMATE_OWNERSHIP'],
-              isNominee: false,
+              roleTitle: 'Director',
+              authorityDocumentType: 'Companies Office Registration',
               pepStatus: 'NOT_PEP',
             });
           }
+
+          setBeneficialOwners(autoPopulatedBOs);
+          setPersonsActing(autoPopulatedPAs);
+
+          // Auto-generate Company Extract from Companies Office data
+          const extractContent = [
+            `COMPANY EXTRACT - NZ Companies Office`,
+            `Generated: ${new Date().toLocaleDateString('en-NZ')}`,
+            `Source: New Zealand Business Number (NZBN) Register`,
+            ``,
+            `COMPANY DETAILS`,
+            `Entity Name: ${nzbnDetails.entityName || ''}`,
+            `NZBN: ${nzbnDetails.nzbn || nzbn}`,
+            `Entity Type: ${nzbnDetails.entityTypeName || ''}`,
+            `Status: ${nzbnDetails.entityStatusDescription || nzbnDetails.entityStatusCode || ''}`,
+            `Registration Date: ${nzbnDetails.registrationDate || ''}`,
+            nzbnDetails.tradingName ? `Trading Name: ${nzbnDetails.tradingName}` : '',
+            nzbnDetails.anzsicDescription ? `Industry (ANZSIC): ${nzbnDetails.anzsicDescription}` : '',
+            ``,
+            `DIRECTORS`,
+            ...(nzbnDetails.directors || []).map((d: any) =>
+              `  - ${d.fullName} (Appointed: ${d.appointmentDate || 'N/A'})`
+            ),
+            ``,
+            `SHAREHOLDERS`,
+            ...(nzbnDetails.shareholders || []).map((s: any) =>
+              `  - ${s.shareholderName} — ${s.numberOfShares} shares`
+            ),
+            ``,
+            `ADDRESSES`,
+            ...(nzbnDetails.addresses || []).map((a: any) =>
+              `  ${a.addressType || ''}: ${[a.address1, a.address2, a.address3, a.postCode].filter(Boolean).join(', ')}`
+            ),
+          ].filter(line => line !== '').join('\n');
+
+          const extractBlob = new Blob([extractContent], { type: 'text/plain' });
+          const extractFile = new File([extractBlob], `Company_Extract_${nzbnDetails.entityName || nzbn}.txt`, { type: 'text/plain' });
+          setDocuments([{
+            id: `doc-extract-${Date.now()}`,
+            file: extractFile,
+            documentType: 'Company Extract',
+            documentCategory: 'ENTITY_IDENTIFICATION',
+            uploading: false,
+            uploaded: true,
+          }]);
         }
-
-        // Add directors as persons acting on behalf
-        for (const director of nzbnDetails.directors || []) {
-          autoPopulatedPAs.push({
-            fullName: director.fullName,
-            dateOfBirth: '',
-            residentialStreet: '',
-            residentialCity: '',
-            residentialPostcode: '',
-            residentialCountry: 'New Zealand',
-            nationality: 'New Zealand',
-            roleTitle: 'Director',
-            authorityDocumentType: 'Companies Office Registration',
-            pepStatus: 'NOT_PEP',
-          });
+      } catch {
+        // NZBN detail fetch failed — proceed without auto-populated data
+        if (entity) {
+          await determineCDDLevel(entity);
         }
-
-        setBeneficialOwners(autoPopulatedBOs);
-        setPersonsActing(autoPopulatedPAs);
-
-        // Auto-generate Company Extract from Companies Office data
-        const extractContent = [
-          `COMPANY EXTRACT - NZ Companies Office`,
-          `Generated: ${new Date().toLocaleDateString('en-NZ')}`,
-          `Source: New Zealand Business Number (NZBN) Register`,
-          ``,
-          `COMPANY DETAILS`,
-          `Entity Name: ${nzbnDetails.entityName || ''}`,
-          `NZBN: ${nzbnDetails.nzbn || nzbn}`,
-          `Entity Type: ${nzbnDetails.entityTypeName || ''}`,
-          `Status: ${nzbnDetails.entityStatusDescription || nzbnDetails.entityStatusCode || ''}`,
-          `Registration Date: ${nzbnDetails.registrationDate || ''}`,
-          nzbnDetails.tradingName ? `Trading Name: ${nzbnDetails.tradingName}` : '',
-          nzbnDetails.anzsicDescription ? `Industry (ANZSIC): ${nzbnDetails.anzsicDescription}` : '',
-          ``,
-          `DIRECTORS`,
-          ...(nzbnDetails.directors || []).map((d: any) =>
-            `  - ${d.fullName} (Appointed: ${d.appointmentDate || 'N/A'})`
-          ),
-          ``,
-          `SHAREHOLDERS`,
-          ...(nzbnDetails.shareholders || []).map((s: any) =>
-            `  - ${s.shareholderName} — ${s.numberOfShares} shares`
-          ),
-          ``,
-          `ADDRESSES`,
-          ...(nzbnDetails.addresses || []).map((a: any) =>
-            `  ${a.addressType || ''}: ${[a.address1, a.address2, a.city, a.postCode].filter(Boolean).join(', ')}`
-          ),
-        ].filter(line => line !== '').join('\n');
-
-        const extractBlob = new Blob([extractContent], { type: 'text/plain' });
-        const extractFile = new File([extractBlob], `Company_Extract_${nzbnDetails.entityName || nzbn}.txt`, { type: 'text/plain' });
-        setDocuments([{
-          id: `doc-extract-${Date.now()}`,
-          file: extractFile,
-          documentType: 'Company Extract',
-          documentCategory: 'ENTITY_IDENTIFICATION',
-          uploading: false,
-          uploaded: true,
-        }]);
       }
 
       setActiveStep(1);
