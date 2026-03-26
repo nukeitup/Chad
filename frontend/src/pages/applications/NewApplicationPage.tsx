@@ -349,15 +349,19 @@ const NewApplicationPage = () => {
     setError(null);
 
     try {
-      // First, get/create entity in our database
-      const entityResponse = await api.get(`/entities/nzbn/${nzbn}`);
-      const entity = entityResponse.data.success ? entityResponse.data.data.entity : null;
-      if (entity) {
-        setSelectedEntity(entity);
+      // Step 1: get/create entity in DB via NZBN — non-fatal if entity detail endpoint 404s
+      // (some entity types like LPs appear in search but may not have full NZBN records)
+      let entity: Entity | null = null;
+      try {
+        const entityResponse = await api.get(`/entities/nzbn/${nzbn}`);
+        entity = entityResponse.data.success ? entityResponse.data.data.entity : null;
+        if (entity) setSelectedEntity(entity);
+      } catch (entityErr: any) {
+        // Entity route failed (e.g. 404 from NZBN for this entity type) — continue to NZBN detail
+        console.warn('Entity route failed, continuing with NZBN detail:', entityErr?.response?.data?.error);
       }
 
-      // Then, fetch full NZBN details including shareholders and directors
-      // This is best-effort — if it fails we still proceed with the entity
+      // Step 2: fetch full NZBN details including shareholders and directors
       try {
         const nzbnResponse = await nzbnApi.getByNzbn(nzbn);
         if (nzbnResponse.data.success && nzbnResponse.data.data) {
@@ -370,10 +374,22 @@ const NewApplicationPage = () => {
             directors: nzbnDetails.directors || [],
           });
 
-          // Determine CDD level now that shareholders are available
-          if (entity) {
-            await determineCDDLevel(entity, shareholders);
+          // If entity route failed, build a minimal entity from NZBN detail data
+          if (!entity) {
+            entity = {
+              id: nzbn, // temporary — will be replaced on application create
+              nzbn,
+              legalName: nzbnDetails.entityName || nzbn,
+              entityType: 'NZ_COMPANY',
+              entityStatus: 'ACTIVE',
+              countryOfIncorporation: 'NZ',
+              isListedIssuer: false,
+            } as unknown as Entity;
+            setSelectedEntity(entity);
           }
+
+          // Determine CDD level now that shareholders are available
+          await determineCDDLevel(entity, shareholders);
 
           // Auto-populate beneficial owners from shareholders with >25% ownership
           const totalShares = nzbnDetails.shareholders?.reduce(
