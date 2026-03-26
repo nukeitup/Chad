@@ -441,26 +441,6 @@ router.post(
       throw new ApiError(`Application incomplete: ${errors.join(', ')}`, 400);
     }
 
-    // --- Document Validation ---
-    if (!config.testMode) {
-      const requiredDocumentTypes = cddDeterminationService.getMandatoryEntityDocumentTypes(
-        application.cddLevel
-      );
-
-      const uploadedDocumentTypes = application.documents!.map((doc) => doc.documentType);
-
-      const missingDocuments = requiredDocumentTypes.filter(
-        (requiredDoc) => !uploadedDocumentTypes.includes(requiredDoc)
-      );
-
-      if (missingDocuments.length > 0) {
-        throw new ApiError(
-          `Missing required documents: ${missingDocuments.join(', ')}`,
-          400
-        );
-      }
-    }
-    // --- End Document Validation ---
 
     const updated = await prisma.cDDApplication.update({
       where: { id },
