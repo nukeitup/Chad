@@ -727,7 +727,7 @@ const NewApplicationPage = () => {
       documentType,
       documentCategory: 'ENTITY_IDENTIFICATION',
       uploading: false,
-      uploaded: false,
+      uploaded: true,
     };
     setDocuments([...documents, newDoc]);
   };
