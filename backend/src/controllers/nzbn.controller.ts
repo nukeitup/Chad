@@ -54,7 +54,7 @@ export const searchNzbn = asyncHandler(
         console.error('NZBN API Request params:', JSON.stringify(error.config?.params));
         throw new ApiError(
           `NZBN API error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`,
-          error.response?.status || 500
+          502
         );
       }
       throw new ApiError('An unexpected error occurred while searching NZBN.', 500);
@@ -180,7 +180,7 @@ export const getEntityByNzbn = asyncHandler(
         console.error('NZBN API Error data:', JSON.stringify(error.response?.data));
         throw new ApiError(
           `NZBN API error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`,
-          error.response?.status || 500
+          502
         );
       }
       throw new ApiError('An unexpected error occurred while fetching entity details.', 500);
