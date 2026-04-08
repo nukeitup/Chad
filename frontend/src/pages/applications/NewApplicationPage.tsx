@@ -2175,12 +2175,12 @@ const NewApplicationPage = () => {
       </Card>
 
       {/* Org Chart Dialog — lives at top level so it works from any step */}
-      <Dialog open={orgChartOpen} onClose={() => setOrgChartOpen(false)} maxWidth="lg" fullWidth>
+      <Dialog open={orgChartOpen} onClose={() => setOrgChartOpen(false)} maxWidth="xl" fullWidth PaperProps={{ sx: { height: '90vh' } }}>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AccountTreeIcon color="primary" />
           Ownership Structure — {orgChartEntityName}
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', p: 0 }}>
           <OrgChartPanel
             entityName={orgChartEntityName}
             shareholders={orgChartShareholders}

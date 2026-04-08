@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useLayoutEffect } from 'react';
 import {
   Box,
   Paper,
@@ -254,6 +254,26 @@ const OrgChartPanel: React.FC<OrgChartPanelProps> = ({
   loading,
   error,
 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current || !contentRef.current) return;
+    setScale(1); // reset first so we can measure natural size
+    const frame = requestAnimationFrame(() => {
+      if (!containerRef.current || !contentRef.current) return;
+      const cW = containerRef.current.clientWidth || 800;
+      const cH = containerRef.current.clientHeight || 600;
+      const nW = contentRef.current.scrollWidth;
+      const nH = contentRef.current.scrollHeight;
+      if (nW > 0 && nH > 0) {
+        setScale(Math.min(cW / nW, cH / nH, 1));
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [shareholders, loading]);
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -274,21 +294,26 @@ const OrgChartPanel: React.FC<OrgChartPanelProps> = ({
 
   return (
     <Box
+      ref={containerRef}
       sx={{
-        overflowX: 'auto',
-        overflowY: 'visible',
-        py: 3,
+        overflow: 'hidden',
+        py: 2,
         px: 2,
         minHeight: 200,
+        width: '100%',
+        height: '100%',
       }}
     >
       <Box
+        ref={contentRef}
         sx={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          minWidth: 'fit-content',
+          width: 'fit-content',
           mx: 'auto',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
         }}
       >
         {/* Shareholders row + connectors — ABOVE the main entity */}
